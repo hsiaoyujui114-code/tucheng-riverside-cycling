@@ -667,6 +667,39 @@ ${trackPoints}
     });
   });
 
+  // 遊戲實例與事件綁定
+  let bikeGameInstance = null;
+  const gameModalBtn = document.getElementById('btn-open-game-modal');
+  if (gameModalBtn) {
+    gameModalBtn.addEventListener('click', () => {
+      openModal('modal-game');
+      if (!bikeGameInstance && typeof window.initRiversideBikeGame === 'function') {
+        bikeGameInstance = window.initRiversideBikeGame('game-canvas');
+      }
+      if (bikeGameInstance) {
+        setTimeout(() => {
+          bikeGameInstance.initCanvasSize();
+          bikeGameInstance.startGame('xinyue');
+        }, 100);
+      }
+    });
+  }
+
+  // 遊戲路線切換按鈕
+  document.querySelectorAll('.game-route-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      document.querySelectorAll('.game-route-btn').forEach(b => {
+        b.className = 'game-route-btn px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition';
+      });
+      btn.className = 'game-route-btn px-2.5 py-1 rounded-lg bg-blue-600 text-white font-bold transition shadow-xs';
+
+      const routeKey = btn.dataset.gameRoute;
+      if (bikeGameInstance) {
+        bikeGameInstance.startGame(routeKey);
+      }
+    });
+  });
+
   // 綁定各按鈕彈窗事件
   document.getElementById('btn-open-checklist').addEventListener('click', () => {
     openModal('modal-checklist');

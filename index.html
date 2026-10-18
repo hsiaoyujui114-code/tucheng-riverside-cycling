@@ -62,8 +62,11 @@
         </div>
       </div>
 
-      <!-- 功能按鈕群 -->
-      <div class="flex items-center gap-2">
+        <button id="btn-open-game-modal" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-700 hover:to-indigo-700 transition shadow-sm shadow-indigo-500/20">
+          <i data-lucide="gamepad-2" class="w-4 h-4"></i>
+          <span>破風小遊戲</span>
+        </button>
+
         <button id="btn-open-checklist" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100 transition border border-blue-200 shadow-2xs">
           <i data-lucide="clipboard-check" class="w-4 h-4 text-blue-600"></i>
           <span>行前檢核</span>
@@ -647,8 +650,99 @@ git push -u origin main</pre>
     </div>
   </div>
 
+  <!-- ==================== 彈窗 5：破風挑戰賽（小遊戲） ==================== -->
+  <div id="modal-game" class="fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 hidden">
+    <div class="bg-slate-900 text-white rounded-2xl max-w-2xl w-full max-h-[95vh] flex flex-col shadow-2xl border border-slate-700 overflow-hidden">
+      <!-- 標題欄 -->
+      <div class="px-5 py-3 border-b border-slate-800 flex items-center justify-between bg-slate-950">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-violet-600 to-indigo-600 text-white flex items-center justify-center shadow-md">
+            <i data-lucide="gamepad-2" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-white text-base">小騎士破風挑戰賽 (Riverside Sprint)</h3>
+            <p class="text-[11px] text-slate-400">避開碎石、收集水壺與阿婆壽司、平安抵達折返點！</p>
+          </div>
+        </div>
+        <button class="btn-close-modal text-slate-400 hover:text-white p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- 遊戲區域 -->
+      <div class="p-3 sm:p-4 overflow-y-auto flex-1 flex flex-col items-center gap-3 bg-slate-900">
+        
+        <!-- 路線選擇鈕 -->
+        <div class="flex flex-wrap items-center justify-center gap-2 w-full text-xs">
+          <span class="text-slate-400 text-[11px] font-semibold">選擇挑戰路線：</span>
+          <button data-game-route="xinyue" class="game-route-btn px-2.5 py-1 rounded-lg bg-blue-600 text-white font-bold transition shadow-xs">
+            🟢 新月橋 (15km)
+          </button>
+          <button data-game-route="yingge" class="game-route-btn px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition">
+            🟢 鶯歌陶瓷老街 (27km)
+          </button>
+          <button data-game-route="dadaocheng" class="game-route-btn px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition">
+            🟡 大稻埕碼頭 (37km)
+          </button>
+          <button data-game-route="tamsui" class="game-route-btn px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition">
+            🔴 淡水老街金色水岸 (73km)
+          </button>
+        </div>
+
+        <div class="text-[11px] text-cyan-300 font-medium">
+          當前路線：<span id="game-route-name-display" class="font-bold text-white">新月橋天空步道線 (15km)</span>
+        </div>
+
+        <!-- Canvas 畫布容器 -->
+        <div class="relative w-full flex justify-center bg-slate-950 rounded-xl overflow-hidden border border-slate-800 shadow-2xl">
+          <canvas id="game-canvas" class="max-w-full block"></canvas>
+        </div>
+
+        <!-- 電腦操作說明與車鈴 -->
+        <div class="w-full flex flex-wrap items-center justify-between gap-2 px-2 text-xs">
+          <div class="text-slate-400 text-[11px] hidden sm:block">
+            鍵盤操控：<kbd class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200">←</kbd> <kbd class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200">→</kbd> 轉向 | 
+            <kbd class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200">↑</kbd> 加速 | 
+            <kbd class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200">↓</kbd> 煞車 | 
+            <kbd class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200">Space</kbd> 下把破風衝刺
+          </div>
+
+          <button id="game-bell-btn" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 transition shadow-sm">
+            <i data-lucide="bell" class="w-3.5 h-3.5"></i>
+            <span>按車鈴（前方散步行人讓道）</span>
+          </button>
+        </div>
+
+        <!-- 手機觸控虛擬搖桿 (sm 以上隱藏) -->
+        <div class="w-full flex items-center justify-between gap-2 pt-1 border-t border-slate-800 sm:hidden">
+          <div class="flex items-center gap-1.5">
+            <button id="touch-left" class="w-12 h-11 rounded-lg bg-slate-800 text-white font-bold active:bg-slate-700 flex items-center justify-center text-lg">
+              ◀
+            </button>
+            <button id="touch-right" class="w-12 h-11 rounded-lg bg-slate-800 text-white font-bold active:bg-slate-700 flex items-center justify-center text-lg">
+              ▶
+            </button>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button id="touch-up" class="w-11 h-11 rounded-lg bg-slate-800 text-white font-bold active:bg-slate-700 flex items-center justify-center text-sm">
+              加速
+            </button>
+            <button id="touch-down" class="w-11 h-11 rounded-lg bg-slate-800 text-white font-bold active:bg-slate-700 flex items-center justify-center text-sm">
+              煞車
+            </button>
+            <button id="touch-sprint" class="px-3 h-11 rounded-lg bg-cyan-600 text-white font-bold active:bg-cyan-700 flex items-center justify-center text-xs">
+              ⚡衝刺
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
   <!-- 資料腳本與主程式 -->
   <script src="routes-data.js"></script>
+  <script src="game.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
