@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>土城學府公園・小騎士雙北河濱單車探索地圖</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+
+  <!-- 頂部導航列 Header -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-3">
+      <!-- 標題與 LOGO -->
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
+          <i data-lucide="bike" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">土城學府公園・小騎士雙北河濱單車地圖</h1>
+            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">
+              公路車折返指南 (非環線)
+            </span>
+          </div>
+          <p class="text-xs text-slate-500 hidden sm:block">專為小學六年級同學設計・土城出發雙北河濱自行車道・安全路線與往返時間試算</p>
+        </div>
+      </div>
+
+      <!-- 功能按鈕群 -->
+      <div class="flex items-center gap-2">
+        <button id="btn-open-checklist" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100 transition border border-blue-200 shadow-2xs">
+          <i data-lucide="clipboard-check" class="w-4 h-4 text-blue-600"></i>
+          <span>行前檢核</span>
+          <span id="checklist-counter-badge" class="ml-0.5 px-1.5 py-0.2 rounded-full text-[10px] bg-blue-600 text-white">0/8</span>
+        </button>
+
+        <button id="btn-open-departure-guide" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 text-amber-800 hover:bg-amber-100 transition border border-amber-200 shadow-2xs">
+          <i data-lucide="shield-alert" class="w-4 h-4 text-amber-600"></i>
+          <span class="hidden xs:inline">如何進河濱？</span>
+          <span class="xs:hidden">進河濱</span>
+        </button>
+
+        <button id="btn-open-plan-modal" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition border border-emerald-200 shadow-2xs">
+          <i data-lucide="share-2" class="w-4 h-4 text-emerald-600"></i>
+          <span>騎乘計畫單</span>
+        </button>
+
+        <button id="btn-open-github-modal" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100 transition border border-slate-200" title="查看 GitHub Pages 部署說明">
+          <i data-lucide="github" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 速度與騎乘時間動態試算欄 -->
+  <section class="bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white py-3 px-4 shadow-inner">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+      
+      <!-- 速度控制區 -->
+      <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-1">
+            <i data-lucide="gauge" class="w-4 h-4 text-cyan-400"></i> 公路車均速：
+          </span>
+          <span id="speed-display" class="font-bold text-cyan-300 text-base">16 km/h</span>
+        </div>
+
+        <!-- 快速速度預設按鈕 -->
+        <div class="inline-flex rounded-lg bg-slate-800/80 p-0.5 border border-slate-700">
+          <button data-speed="12" class="speed-preset-btn px-2.5 py-1 rounded-md text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-700 transition">
+            🐢 悠閒 12k
+          </button>
+          <button data-speed="16" class="speed-preset-btn active-speed px-2.5 py-1 rounded-md text-xs font-bold text-white bg-blue-600 transition shadow-xs">
+            🚴 巡航 16k
+          </button>
+          <button data-speed="20" class="speed-preset-btn px-2.5 py-1 rounded-md text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-700 transition">
+            ⚡ 破風 20k
+          </button>
+        </div>
+
+        <!-- 微調滑桿 -->
+        <div class="flex items-center gap-2 flex-1 min-w-[140px] max-w-[200px]">
+          <input id="speed-slider" type="range" min="10" max="24" value="16" step="1" class="w-full h-1.5 bg-slate-700 rounded-lg cursor-pointer">
+        </div>
+      </div>
+
+      <!-- 同學結伴模式與目前路線預估即時數據 -->
+      <div class="flex flex-wrap items-center justify-end gap-3 w-full md:w-auto text-xs">
+        
+        <!-- 結伴模式切換 -->
+        <label class="flex items-center gap-2 bg-slate-800/60 px-2.5 py-1.5 rounded-lg border border-slate-700/80 cursor-pointer select-none hover:bg-slate-800">
+          <input type="checkbox" id="group-mode-toggle" class="rounded text-blue-500 focus:ring-0">
+          <span class="text-slate-300 flex items-center gap-1">
+            <i data-lucide="users" class="w-3.5 h-3.5 text-amber-400"></i>
+            同學團體騎 (+15% 彈性休息)
+          </span>
+        </label>
+
+        <!-- 當前選定路線時間快速看板 -->
+        <div class="bg-indigo-900/60 border border-indigo-500/40 px-3 py-1.5 rounded-lg flex items-center gap-3">
+          <div class="flex flex-col">
+            <span class="text-[10px] text-indigo-300">單程騎乘</span>
+            <span id="quick-oneway-time" class="font-bold text-white text-xs">--</span>
+          </div>
+          <div class="h-6 w-[1px] bg-indigo-500/30"></div>
+          <div class="flex flex-col">
+            <span class="text-[10px] text-amber-300">往返騎乘</span>
+            <span id="quick-round-time" class="font-bold text-amber-300 text-xs">--</span>
+          </div>
+          <div class="h-6 w-[1px] bg-indigo-500/30"></div>
+          <div class="flex flex-col">
+            <span class="text-[10px] text-emerald-300">總外出預估(含休息)</span>
+            <span id="quick-total-time" class="font-bold text-emerald-300 text-xs">--</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 主要核心區塊 (地圖 + 路線清單) -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex-1 w-full">
+    
+    <!-- 難易度分類標籤欄 -->
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+      <div class="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full">
+        <span class="text-xs font-medium text-slate-500 mr-1 flex items-center gap-1">
+          <i data-lucide="filter" class="w-3.5 h-3.5"></i> 路線篩選：
+        </span>
+        <button data-filter="all" class="filter-tab active-filter px-3 py-1 rounded-full text-xs font-semibold bg-slate-900 text-white transition">
+          全部路線 (7)
+        </button>
+        <button data-filter="easy" class="filter-tab px-3 py-1 rounded-full text-xs font-medium bg-slate-200 text-slate-700 hover:bg-slate-300 transition">
+          🟢 入門輕鬆 (15-27 km)
+        </button>
+        <button data-filter="medium" class="filter-tab px-3 py-1 rounded-full text-xs font-medium bg-slate-200 text-slate-700 hover:bg-slate-300 transition">
+          🟡 精采半日 (26-42 km)
+        </button>
+        <button data-filter="hard" class="filter-tab px-3 py-1 rounded-full text-xs font-medium bg-slate-200 text-slate-700 hover:bg-slate-300 transition">
+          🔴 勇腳挑戰 (54-73 km)
+        </button>
+      </div>
+
+      <div class="text-xs text-slate-500 flex items-center gap-1.5">
+        <span class="inline-block w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping"></span>
+        <span>起點皆為：<strong>土城學府公園</strong>（折返非環線）</span>
+      </div>
+    </div>
+
+    <!-- 地圖與路線卡片佈局 -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+      
+      <!-- 左側/中間：互動式 Leaflet 地圖 -->
+      <div class="lg:col-span-7 xl:col-span-8 flex flex-col gap-3">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden relative">
+          
+          <!-- 地圖頂端快速操作鈕 -->
+          <div class="absolute top-3 right-3 z-[1000] flex flex-col gap-1.5">
+            <button id="btn-zoom-start" class="bg-white/95 hover:bg-white text-slate-800 p-2 rounded-xl shadow-md border border-slate-200 transition flex items-center gap-1.5 text-xs font-semibold backdrop-blur-xs" title="回到土城學府公園起點">
+              <i data-lucide="map-pin" class="w-4 h-4 text-amber-500"></i>
+              <span class="hidden sm:inline">學府公園</span>
+            </button>
+            <button id="btn-fit-all" class="bg-white/95 hover:bg-white text-slate-800 p-2 rounded-xl shadow-md border border-slate-200 transition flex items-center gap-1.5 text-xs font-semibold backdrop-blur-xs" title="全覽雙北自行車路網">
+              <i data-lucide="maximize" class="w-4 h-4 text-blue-600"></i>
+              <span class="hidden sm:inline">全覽雙北</span>
+            </button>
+          </div>
+
+          <!-- 地圖底端圖例 Legend -->
+          <div class="absolute bottom-3 left-3 z-[1000] bg-white/90 backdrop-blur-xs px-3 py-2 rounded-xl shadow-md border border-slate-200 text-[11px] text-slate-700 flex flex-wrap items-center gap-3">
+            <span class="flex items-center gap-1 font-semibold text-slate-900">
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span> 起點(學府公園)
+            </span>
+            <span class="flex items-center gap-1">
+              <span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block"></span> 折返點
+            </span>
+            <span class="flex items-center gap-1">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> 風景打卡點
+            </span>
+            <span class="flex items-center gap-1">
+              <span class="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></span> 補水/洗手間
+            </span>
+          </div>
+
+          <!-- 地圖實體 -->
+          <div id="map"></div>
+        </div>
+
+        <!-- 地圖下方：六年級公路車安全騎乘錦囊 -->
+        <div class="bg-gradient-to-r from-blue-50 via-indigo-50 to-amber-50 border border-blue-200/80 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-slate-700">
+          <div class="flex items-start gap-2.5">
+            <div class="p-2 rounded-lg bg-amber-100 text-amber-700 shrink-0 mt-0.5">
+              <i data-lucide="shield-check" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <p class="font-bold text-slate-900 text-sm">小學六年級公路車小騎士安全核心準則：</p>
+              <p class="text-slate-600 mt-0.5">
+                1. <strong>嚴禁騎行擺接堡路平面</strong>（砂石車多車速快，請務必走引道進入堤外）<br>
+                2. <strong>牽引道與下坡請放慢或下車牽行</strong>（公路車細胎抓地力窄，牽引道坡陡不可競速）<br>
+                3. <strong>每 20 分鐘喝兩口水</strong>（水壺架裝滿水，中途看到補水站隨時補滿）
+              </p>
+            </div>
+          </div>
+          <button id="btn-read-safety-guide" class="shrink-0 px-3 py-1.5 rounded-lg bg-white border border-slate-300 font-semibold text-slate-800 hover:bg-slate-50 transition shadow-2xs">
+            閱讀完整安全指南
+          </button>
+        </div>
+
+      </div>
+
+      <!-- 右側：路線選擇清單卡片 -->
+      <div class="lg:col-span-5 xl:col-span-4 flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+            <i data-lucide="compass" class="w-4 h-4 text-blue-600"></i>
+            <span>精選折返路線清單</span>
+          </h2>
+          <span class="text-xs text-slate-500">點擊卡片地圖即時聚焦</span>
+        </div>
+
+        <!-- 路線卡片滾動容器 -->
+        <div id="routes-container" class="flex flex-col gap-3 max-h-[640px] overflow-y-auto pr-1">
+          <!-- 由 JS 動態注入卡片 -->
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 選中路線的深度詳情儀表板 (Detail Panel) -->
+    <section id="route-detail-section" class="mt-8 bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-6 transition-all">
+      <div id="detail-empty-state" class="text-center py-12 text-slate-400">
+        <i data-lucide="bike" class="w-12 h-12 mx-auto stroke-1 text-slate-300 mb-2"></i>
+        <p class="text-sm font-medium">請從上方清單或地圖點選一條路線，查看詳細往返時間、沿途風景與美食攻略！</p>
+      </div>
+
+      <div id="detail-content" class="hidden flex flex-col gap-6">
+        <!-- 頂部標題與重點指標 -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-slate-100">
+          <div>
+            <div class="flex flex-wrap items-center gap-2 mb-1">
+              <span id="detail-category-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold text-white bg-blue-600">--</span>
+              <span id="detail-tag" class="text-xs font-medium text-slate-500">--</span>
+            </div>
+            <h2 id="detail-title" class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">--</h2>
+            <p id="detail-highlight" class="text-xs sm:text-sm text-slate-600 mt-1">--</p>
+          </div>
+
+          <!-- 動作按鈕：下載 GPX 與產生計畫小卡 -->
+          <div class="flex items-center gap-2 shrink-0">
+            <button id="btn-download-gpx" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition border border-slate-300">
+              <i data-lucide="download" class="w-4 h-4"></i>
+              <span>下載 GPX 軌跡</span>
+            </button>
+            <button id="btn-generate-card-for-route" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition shadow-sm shadow-blue-500/20">
+              <i data-lucide="file-text" class="w-4 h-4"></i>
+              <span>產生本次出遊卡</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 數據統計儀表板 (Stats Cards) -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <!-- 單程距離與時間 -->
+          <div class="bg-blue-50/70 border border-blue-100 rounded-xl p-3.5 flex flex-col">
+            <span class="text-[11px] font-semibold text-blue-700 flex items-center gap-1">
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i> 單程距離與騎乘
+            </span>
+            <div class="mt-1 flex items-baseline gap-1">
+              <span id="detail-oneway-dist" class="text-lg font-bold text-blue-950">-- km</span>
+            </div>
+            <span id="detail-oneway-time" class="text-xs font-medium text-blue-800 mt-0.5">約 -- 分鐘</span>
+          </div>
+
+          <!-- 往返總距離與純騎乘時間 -->
+          <div class="bg-indigo-50/70 border border-indigo-100 rounded-xl p-3.5 flex flex-col">
+            <span class="text-[11px] font-semibold text-indigo-700 flex items-center gap-1">
+              <i data-lucide="repeat" class="w-3.5 h-3.5"></i> 往返總距離與純騎乘
+            </span>
+            <div class="mt-1 flex items-baseline gap-1">
+              <span id="detail-round-dist" class="text-lg font-bold text-indigo-950">-- km</span>
+            </div>
+            <span id="detail-round-time" class="text-xs font-medium text-indigo-800 mt-0.5">騎乘 -- 小時</span>
+          </div>
+
+          <!-- 建議玩樂與休息時間 -->
+          <div class="bg-amber-50/70 border border-amber-100 rounded-xl p-3.5 flex flex-col">
+            <span class="text-[11px] font-semibold text-amber-700 flex items-center gap-1">
+              <i data-lucide="coffee" class="w-3.5 h-3.5"></i> 建議休息吃點心
+            </span>
+            <div class="mt-1 flex items-baseline gap-1">
+              <span id="detail-rest-time" class="text-lg font-bold text-amber-950">約 -- 分鐘</span>
+            </div>
+            <span class="text-xs text-amber-800 mt-0.5">拍照打卡、吃美食補給</span>
+          </div>
+
+          <!-- 總出門回家時間 -->
+          <div class="bg-emerald-50/70 border border-emerald-100 rounded-xl p-3.5 flex flex-col">
+            <span class="text-[11px] font-semibold text-emerald-700 flex items-center gap-1">
+              <i data-lucide="clock" class="w-3.5 h-3.5"></i> 預估外出總時間
+            </span>
+            <div class="mt-1 flex items-baseline gap-1">
+              <span id="detail-total-outing-time" class="text-lg font-bold text-emerald-950">--</span>
+            </div>
+            <span class="text-xs text-emerald-800 mt-0.5">向家人報備的最佳時間</span>
+          </div>
+        </div>
+
+        <!-- 區塊內容：如何出發 + 景點與美食 + 補水洗手間 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          
+          <!-- 第一欄：如何從學府公園安全騎到折返點 -->
+          <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-4 flex flex-col gap-3">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+              <i data-lucide="navigation" class="w-4 h-4 text-blue-600"></i>
+              <span>出發與折返動線指南</span>
+            </h3>
+
+            <div class="text-xs text-slate-600 space-y-2.5">
+              <div class="p-2.5 rounded-lg bg-white border border-slate-200">
+                <span class="font-bold text-slate-800 block mb-1">🚲 如何從學府公園進河濱：</span>
+                <p id="detail-departure-tip" class="text-slate-600 leading-relaxed">--</p>
+              </div>
+
+              <div class="p-2.5 rounded-lg bg-white border border-slate-200">
+                <span class="font-bold text-slate-800 block mb-1">🔄 折返點與回程提醒：</span>
+                <p id="detail-return-tip" class="text-slate-600 leading-relaxed">--</p>
+              </div>
+
+              <div class="p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-800">
+                <span class="font-bold block mb-0.5">⚠️ 六年級公路車安全叮嚀：</span>
+                <p>非環線折返路線請隨時注意風向與體力，若去程順風，回程往往會遇到逆風，請保留 40% 的體力給回程踩踏！</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 第二欄：重要中途地標 (Waypoints) -->
+          <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-4 flex flex-col gap-3">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+              <i data-lucide="flag" class="w-4 h-4 text-emerald-600"></i>
+              <span>重要轉折點與地標</span>
+            </h3>
+
+            <div id="detail-waypoints-list" class="flex flex-col gap-2 overflow-y-auto max-h-[300px] pr-1 text-xs">
+              <!-- 由 JS 渲染 -->
+            </div>
+          </div>
+
+          <!-- 第三欄：沿途風景打卡、平價美食、飲水補給 -->
+          <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-4 flex flex-col gap-3">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+              <i data-lucide="sparkles" class="w-4 h-4 text-amber-500"></i>
+              <span>風景・平價美食・補水站</span>
+            </h3>
+
+            <div id="detail-pois-list" class="flex flex-col gap-2 overflow-y-auto max-h-[300px] pr-1 text-xs">
+              <!-- 由 JS 渲染 -->
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 頁尾 Footer -->
+  <footer class="bg-white border-t border-slate-200 mt-12 py-6 text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <i data-lucide="bike" class="w-4 h-4 text-blue-600"></i>
+        <span>土城學府公園・小騎士雙北河濱單車探索地圖</span>
+      </div>
+      <div>
+        <span>純靜態網頁設計・支援直接部署至 GitHub Pages・公路車安全第一！</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ==================== 彈窗 1：行前安全檢核清單 ==================== -->
+  <div id="modal-checklist" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+      <!-- 彈窗標題 -->
+      <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-blue-50/50">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center">
+            <i data-lucide="clipboard-check" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-900 text-base">小學生公路車行前安全檢核</h3>
+            <p class="text-xs text-slate-500">每一項都確認完畢再出發，平安回家最重要！</p>
+          </div>
+        </div>
+        <button class="btn-close-modal text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- 檢核項目清單 -->
+      <div id="checklist-items-container" class="p-5 overflow-y-auto flex-1 space-y-2.5 text-xs">
+        <!-- JS 動態生成 -->
+      </div>
+
+      <!-- 彈窗底端動作 -->
+      <div class="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between gap-3">
+        <div class="text-xs text-slate-600">
+          已完成：<span id="modal-checklist-status" class="font-bold text-blue-600">0 / 8</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="btn-reset-checklist" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-200 transition">
+            重置
+          </button>
+          <button id="btn-finish-checklist" class="px-4 py-1.5 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition shadow-sm">
+            我準備好了！確認出發
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 彈窗 2：如何從學府公園安全騎進河濱 ==================== -->
+  <div id="modal-departure-guide" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-amber-50">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center">
+            <i data-lucide="shield-alert" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-900 text-base">學府公園出發・安全進河濱指南</h3>
+            <p class="text-xs text-amber-800">重要安全守則：避開擺接堡路大型砂石車！</p>
+          </div>
+        </div>
+        <button class="btn-close-modal text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-5 overflow-y-auto flex-1 space-y-4 text-xs text-slate-700">
+        <div class="p-3 bg-red-50 border border-red-200 rounded-xl text-red-900">
+          <p class="font-bold mb-1 flex items-center gap-1 text-sm">
+            <i data-lucide="alert-triangle" class="w-4 h-4 text-red-600"></i>
+            土城區小騎士絕對禁行路段提醒：
+          </p>
+          <p class="leading-relaxed">
+            土城堤外的「擺接堡路」是連接板橋與三峽的大型砂石車與貨車幹道，車速極快且無自行車專用道！<strong>國小六年級同學請絕對不要直接騎上擺接堡路平面</strong>。請一律透過市區道路接「自行車牽引道」或「水門引道」跨越堤防進入堤外自行車道！
+          </p>
+        </div>
+
+        <div class="space-y-3">
+          <div class="border border-slate-200 rounded-xl p-3.5 bg-slate-50">
+            <span class="font-bold text-blue-900 text-sm flex items-center gap-1.5 mb-2">
+              <i data-lucide="compass" class="w-4 h-4 text-blue-600"></i>
+              通道一：浮洲橋自行車牽引道（往北：新月橋、大稻埕、淡水、八里）
+            </span>
+            <ol class="list-decimal list-inside space-y-1 text-slate-600 pl-1">
+              <li>學府公園集合出發，沿學府路一段前行，轉入裕民路。</li>
+              <li>經海山捷運站商圈直行接中華路一段人行道/慢車道。</li>
+              <li>到達浮洲橋下，依照標示推車上「浮洲橋自行車專用引道」。</li>
+              <li>安全抵達大漢溪右岸自行車道！從此全程無汽車干擾。</li>
+            </ol>
+          </div>
+
+          <div class="border border-slate-200 rounded-xl p-3.5 bg-slate-50">
+            <span class="font-bold text-emerald-900 text-sm flex items-center gap-1.5 mb-2">
+              <i data-lucide="compass" class="w-4 h-4 text-emerald-600"></i>
+              通道二：城林大橋牽引道 / 媽祖田水門（往南：鶯歌陶瓷老街、三鶯之心）
+            </span>
+            <ol class="list-decimal list-inside space-y-1 text-slate-600 pl-1">
+              <li>從學府公園走裕民路直行，左轉中華路一段/二段。</li>
+              <li>至城林大橋前，走人行陸橋與自行車專用牽引道安全跨越防汛堤防。</li>
+              <li>或沿中央路三段/四段慢車道前進至媽祖田水門專用自行車便道。</li>
+              <li>進入大漢溪右岸後一路向西南奔馳，路面筆直平坦！</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4 border-t border-slate-100 bg-slate-50 text-right">
+        <button class="btn-close-modal px-4 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-white hover:bg-slate-900 transition">
+          我知道了，記住安全通道！
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 彈窗 3：騎乘計畫單與列印卡片 ==================== -->
+  <div id="modal-plan" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-emerald-50 no-print">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center">
+            <i data-lucide="share-2" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-900 text-base">小騎士單車騎乘計畫單</h3>
+            <p class="text-xs text-slate-500">可截圖傳給同學與家長，掌握時間平安出發</p>
+          </div>
+        </div>
+        <button class="btn-close-modal text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- 計畫單實體內容 (可供列印與截圖) -->
+      <div id="print-card-content" class="p-6 overflow-y-auto flex-1 space-y-4 text-xs text-slate-800 bg-white">
+        
+        <div class="border-2 border-dashed border-slate-300 rounded-xl p-4 bg-slate-50/50">
+          <div class="flex items-center justify-between border-b border-slate-200 pb-2 mb-3">
+            <div>
+              <span class="text-[10px] font-bold uppercase tracking-wider text-blue-600">土城公路車探索計畫</span>
+              <h4 id="plan-card-route-name" class="text-base font-bold text-slate-900 mt-0.5">--</h4>
+            </div>
+            <div class="text-right">
+              <span class="text-[10px] text-slate-500">騎乘型態</span>
+              <p class="font-bold text-emerald-700">折返線 (非環線)</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 text-xs mb-3">
+            <div class="bg-white p-2.5 rounded-lg border border-slate-200">
+              <span class="text-slate-500 block text-[10px]">起點與集合地</span>
+              <span class="font-bold text-slate-900">土城學府公園 (海山站)</span>
+            </div>
+            <div class="bg-white p-2.5 rounded-lg border border-slate-200">
+              <span class="text-slate-500 block text-[10px]">預計折返目的地</span>
+              <span id="plan-card-destination" class="font-bold text-slate-900">--</span>
+            </div>
+            <div class="bg-white p-2.5 rounded-lg border border-slate-200">
+              <span class="text-slate-500 block text-[10px]">往返總里程</span>
+              <span id="plan-card-distance" class="font-bold text-indigo-700">-- km</span>
+            </div>
+            <div class="bg-white p-2.5 rounded-lg border border-slate-200">
+              <span class="text-slate-500 block text-[10px]">預估純騎乘時間</span>
+              <span id="plan-card-ride-time" class="font-bold text-blue-700">--</span>
+            </div>
+          </div>
+
+          <!-- 時間規劃 -->
+          <div class="bg-blue-50/60 border border-blue-100 rounded-lg p-2.5 text-xs text-blue-950 mb-3 space-y-1">
+            <p><strong>⏱️ 預估總外出時間：</strong><span id="plan-card-total-time" class="font-bold text-blue-700">--</span> (含休息與點心時間)</p>
+            <p><strong>💡 建議出發時間：</strong>上午 08:30 前或下午 14:30 後（避免正午大太陽與逆風）</p>
+          </div>
+
+          <!-- 家長聯絡小卡 -->
+          <div class="border border-amber-200 bg-amber-50/60 rounded-lg p-2.5 text-xs text-amber-900">
+            <span class="font-bold block mb-1">📞 緊急聯絡與報備確認：</span>
+            <p>小騎士姓名：__________ / 同行同學：__________</p>
+            <p>家長聯絡電話：__________ / 預計回到家時間：__________</p>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between gap-2 no-print">
+        <button id="btn-copy-plan-text" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 transition">
+          <i data-lucide="copy" class="w-3.5 h-3.5 inline mr-1"></i>複製文字版
+        </button>
+        <div class="flex items-center gap-2">
+          <button onclick="window.print()" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-sm">
+            <i data-lucide="printer" class="w-3.5 h-3.5 inline mr-1"></i>列印計畫卡
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 彈窗 4：GitHub Pages 部署說明 ==================== -->
+  <div id="modal-github" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-900 text-white">
+        <div class="flex items-center gap-2">
+          <i data-lucide="github" class="w-5 h-5"></i>
+          <div>
+            <h3 class="font-bold text-base">如何發布到 GitHub Pages？</h3>
+            <p class="text-xs text-slate-400">這是一個純靜態網頁，免費上傳即可分享！</p>
+          </div>
+        </div>
+        <button class="btn-close-modal text-slate-400 hover:text-white p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-5 overflow-y-auto flex-1 space-y-3.5 text-xs text-slate-700">
+        <div class="space-y-1">
+          <p class="font-bold text-slate-900 text-sm">步驟 1：建立 GitHub 新儲存庫 (Repo)</p>
+          <p class="text-slate-600">到 <a href="https://github.com/new" target="_blank" class="text-blue-600 underline font-medium">github.com/new</a> 建立一個公開 (Public) 的 Repo，例如取名為 <code>tucheng-riverside-cycling</code>。</p>
+        </div>
+
+        <div class="space-y-1">
+          <p class="font-bold text-slate-900 text-sm">步驟 2：上傳專案檔案</p>
+          <p class="text-slate-600">在你的終端機或 Git 軟體中執行：</p>
+          <pre class="bg-slate-900 text-emerald-400 p-2.5 rounded-lg font-mono text-[11px] overflow-x-auto">git remote add origin https://github.com/你的帳號/tucheng-riverside-cycling.git
+git branch -M main
+git push -u origin main</pre>
+        </div>
+
+        <div class="space-y-1">
+          <p class="font-bold text-slate-900 text-sm">步驟 3：開啟 GitHub Pages 免費網頁</p>
+          <p class="text-slate-600">進入該 Repo 的 <strong>Settings</strong> -> 點選左側 <strong>Pages</strong> -> 在 <strong>Build and deployment</strong> 選擇 <code>Deploy from a branch</code> -> Branch 選 <code>main</code> / <code>/ (root)</code> -> 按下 <strong>Save</strong>！</p>
+          <p class="text-emerald-600 font-medium">約 1 分鐘後，你就會獲得一個屬於你的專屬網址，手機點開就能直接看！</p>
+        </div>
+      </div>
+
+      <div class="p-4 border-t border-slate-100 bg-slate-50 text-right">
+        <button class="btn-close-modal px-4 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-white hover:bg-slate-900 transition">
+          我知道了！
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 資料腳本與主程式 -->
+  <script src="routes-data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

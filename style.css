@@ -1,0 +1,182 @@
+/* 雙北河濱單車探索地圖 - 專屬樣式表 */
+
+/* 基礎字體與平滑滾動 */
+html {
+  scroll-behavior: smooth;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+}
+
+/* 地圖容器樣式 */
+#map {
+  width: 100%;
+  height: 100%;
+  min-height: 480px;
+  background-color: #f1f5f9;
+  z-index: 10;
+}
+
+/* 學府公園起點閃爍標記 */
+.pulsing-start-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.pulsing-start-marker .marker-core {
+  width: 22px;
+  height: 22px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.9), 0 2px 6px rgba(0, 0, 0, 0.3);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 11px;
+}
+
+.pulsing-start-marker .pulse-ring {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background-color: rgba(245, 158, 11, 0.4);
+  animation: pulse-animation 2s infinite ease-out;
+  z-index: 1;
+}
+
+@keyframes pulse-animation {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+/* POI 景點圖標樣式 */
+.custom-poi-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: white;
+  font-weight: bold;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+  border: 2px solid #ffffff;
+}
+
+.custom-poi-marker:hover {
+  transform: scale(1.25);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  z-index: 9999 !important;
+}
+
+/* 目的地折返點旗幟標記 */
+.destination-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: white;
+  border: 2.5px solid #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  animation: bounce-subtle 2s infinite ease-in-out;
+}
+
+@keyframes bounce-subtle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+/* 自定義 Leaflet Popup 樣式 */
+.leaflet-popup-content-wrapper {
+  border-radius: 14px;
+  padding: 4px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  font-family: inherit;
+}
+
+.leaflet-popup-content {
+  margin: 10px 14px;
+  line-height: 1.5;
+}
+
+.leaflet-popup-tip {
+  background-color: white;
+}
+
+/* 路線卡片活躍樣式 */
+.route-card {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid transparent;
+}
+
+.route-card:hover {
+  transform: translateY(-2px);
+}
+
+.route-card.active {
+  border-color: #3b82f6;
+  background-color: #eff6ff;
+  box-shadow: 0 4px 20px -2px rgba(59, 130, 246, 0.25);
+}
+
+/* 自定義滑動桿樣式 */
+input[type="range"] {
+  accent-color: #2563eb;
+}
+
+/* 捲軸美化 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* 列印專用樣式（騎乘計畫書） */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #print-card-modal, #print-card-content, #print-card-content * {
+    visibility: visible;
+  }
+  #print-card-modal {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 20px;
+    background: white;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
