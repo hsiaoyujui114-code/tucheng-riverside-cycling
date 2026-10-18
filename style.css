@@ -159,6 +159,20 @@ input[type="range"] {
   background: #94a3b8;
 }
 
+/* 圖層切換按鈕樣式 */
+.map-layer-pill {
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.map-layer-pill:hover {
+  transform: translateY(-1px);
+}
+
+.map-layer-pill.active-layer-pill {
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+
 /* 列印專用樣式（騎乘計畫書） */
 @media print {
   body * {
@@ -180,3 +194,4 @@ input[type="range"] {
     display: none !important;
   }
 }
+

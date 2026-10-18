@@ -25,24 +25,78 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentPoiMarkers = [];
 
   // ==========================================
-  // 1. 初始化 Leaflet 地圖
+  // 1. 初始化 Leaflet 地圖與多圖層 (解決看不到街道問題)
   // ==========================================
+  let currentBaseLayer = null;
+  let streetConnectorGroup = null;
+
   function initMap() {
     // 預設視野中心為土城學府公園與大漢溪河濱交會處
     map = L.map('map', {
-      center: [25.03, 121.46],
-      zoom: 12,
+      center: [24.995, 121.448],
+      zoom: 14, // 初始縮放放大，讓街道清晰可見
       zoomControl: true
     });
 
-    // 使用高清晰清新地圖圖磚 (CartoDB Positron / OSM)
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-      subdomains: 'abcd',
-      maxZoom: 19
-    }).addTo(map);
+    // 1. 定義多種高解析度地圖圖磚（包含超清晰街道圖與臺灣官方電子圖）
+    const tileLayers = {
+      // Google 街道圖：最熟悉、全中文路名、門牌、小巷、捷運站與地標最清晰！
+      google: L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        subdomains: ['0', '1', '2', '3'],
+        maxZoom: 20,
+        attribution: '&copy; Google Maps'
+      }),
+      // 內政部國土測繪中心 臺灣通用電子地圖：台灣官方權威街巷、水門與引道
+      nlsc: L.tileLayer('https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}', {
+        maxZoom: 20,
+        attribution: '&copy; 內政部國土測繪中心 NLSC'
+      }),
+      // Google 衛星混合空照圖：空照實景加上街道名稱標註
+      hybrid: L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+        subdomains: ['0', '1', '2', '3'],
+        maxZoom: 20,
+        attribution: '&copy; Google Maps 衛星'
+      }),
+      // OpenStreetMap 標準單車街道圖
+      osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+      })
+    };
 
-    // 建立學府公園起點標記 (金色光圈脈衝)
+    // 預設採用「Google 街道圖」，確保第一時間就能看清所有土城街道名稱與巷弄！
+    currentBaseLayer = tileLayers.google;
+    currentBaseLayer.addTo(map);
+
+    // 綁定頂端圖層切換按鈕
+    const layerButtons = [
+      { id: 'btn-layer-google', layer: tileLayers.google },
+      { id: 'btn-layer-nlsc', layer: tileLayers.nlsc },
+      { id: 'btn-layer-hybrid', layer: tileLayers.hybrid },
+      { id: 'btn-layer-osm', layer: tileLayers.osm }
+    ];
+
+    layerButtons.forEach(btnInfo => {
+      const btn = document.getElementById(btnInfo.id);
+      if (btn) {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.map-layer-pill').forEach(b => {
+            b.classList.remove('active-layer-pill', 'bg-blue-600', 'text-white', 'font-bold');
+            b.classList.add('text-slate-300', 'hover:bg-slate-800');
+          });
+          btn.classList.add('active-layer-pill', 'bg-blue-600', 'text-white', 'font-bold');
+          btn.classList.remove('text-slate-300', 'hover:bg-slate-800');
+
+          if (currentBaseLayer) {
+            map.removeLayer(currentBaseLayer);
+          }
+          currentBaseLayer = btnInfo.layer;
+          currentBaseLayer.addTo(map);
+        });
+      }
+    });
+
+    // 2. 建立學府公園起點標記 (金色光圈脈衝)
     const pulsingIcon = L.divIcon({
       className: 'pulsing-start-marker',
       html: `
@@ -59,14 +113,18 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="font-bold text-amber-600 text-sm mb-1 flex items-center gap-1">
           <span>🚲 土城學府公園 (起點)</span>
         </div>
-        <p class="text-slate-600 mb-1">土城小騎士的集合與出發地 (海山站3號出口旁)</p>
+        <p class="text-slate-600 mb-1">土城區學府路一段 (海山捷運站3號出口旁)</p>
+        <p class="text-slate-500 text-[11px] mb-1.5">街道指引：沿學府路、裕民路接中華路，由浮洲橋引道或城林橋引道進入河濱自行車道！</p>
         <div class="p-1.5 bg-amber-50 rounded border border-amber-200 text-amber-800 text-[11px]">
-          ⚠️ 提醒：請走浮洲橋引道或城林橋引道進河濱，嚴禁騎行擺接堡路平面！
+          ⚠️ 提醒：請走引道跨越堤防，嚴禁直接騎上擺接堡路平面（砂石車多）！
         </div>
       </div>
     `);
 
-    // 繪製所有路線的折線 (Polylines)
+    // 3. 繪製「市區街道導引路線」圖層（學府公園 ➜ 河濱引道）
+    initStreetConnectors();
+
+    // 4. 繪製所有雙北河濱自行車路線折線 (Polylines)
     routes.forEach(route => {
       const polyline = L.polyline(route.pathPoints, {
         color: route.color,
@@ -90,15 +148,120 @@ document.addEventListener('DOMContentLoaded', () => {
       polylineLayers[route.id] = polyline;
     });
 
-    // 頂部地圖功能鍵事件
+    // 5. 頂部地圖功能鍵事件
+    // 放大看街道按鈕 (直接放大到 Zoom 16 呈現土城市區完整路網)
+    const btnZoomStreets = document.getElementById('btn-zoom-streets');
+    if (btnZoomStreets) {
+      btnZoomStreets.addEventListener('click', () => {
+        map.flyTo([24.9880, 121.4450], 16, { duration: 1.0 });
+      });
+    }
+
+    // 回到學府公園起點
     document.getElementById('btn-zoom-start').addEventListener('click', () => {
-      map.setView(startPoint, 15);
+      map.flyTo(startPoint, 16, { duration: 1.0 });
       startMarker.openPopup();
     });
 
+    // 全覽雙北自行車路網
     document.getElementById('btn-fit-all').addEventListener('click', () => {
       fitAllRoutes();
     });
+  }
+
+  // ==========================================
+  // 市區街道導引圖層（清晰標出學府路、裕民路、中華路到水門引道）
+  // ==========================================
+  function initStreetConnectors() {
+    streetConnectorGroup = L.featureGroup().addTo(map);
+
+    // 往北街道路徑 (學府路一段 -> 裕民路 -> 中華路一段 -> 浮洲橋自行車引道)
+    const streetNorthPath = [
+      startPoint,
+      [24.9875, 121.4485], // 學府路一段
+      [24.9882, 121.4468], // 學府路一段與裕民路口
+      [24.9890, 121.4452], // 裕民路 (海山捷運商圈)
+      [24.9898, 121.4435], // 裕民路與中華路一段交叉口
+      [24.9928, 121.4428], // 中華路一段往浮洲橋方向
+      [24.9965, 121.4425]  // 浮洲橋自行車牽引道
+    ];
+
+    // 往南街道路徑 (學府公園 -> 裕民路 -> 中華路二段 -> 城林橋牽引道)
+    const streetSouthPath = [
+      startPoint,
+      [24.9860, 121.4470],
+      [24.9850, 121.4425],
+      [24.9838, 121.4390],
+      [24.9825, 121.4345],
+      [24.9812, 121.4312]  // 城林大橋牽引道
+    ];
+
+    // 繪製往北街道引導線（亮橙色虛線，辨識度極高）
+    const lineNorth = L.polyline(streetNorthPath, {
+      color: '#f97316',
+      weight: 5,
+      dashArray: '8, 8',
+      opacity: 0.95
+    }).addTo(streetConnectorGroup);
+
+    lineNorth.bindPopup(`
+      <div class="text-xs">
+        <h4 class="font-bold text-amber-700 text-sm mb-1">🚦 市區街道導引：往浮洲橋引道</h4>
+        <p class="text-slate-700"><strong>路線：</strong>學府路一段 ➜ 裕民路 (經海山站) ➜ 中華路一段 ➜ 浮洲橋自行車牽引道。</p>
+        <p class="text-slate-500 mt-1">※ 市區道路紅綠燈多，請小騎士走慢車道或人行牽車，推車上引道進入大漢溪右岸！</p>
+      </div>
+    `);
+
+    // 繪製往南街道引導線
+    const lineSouth = L.polyline(streetSouthPath, {
+      color: '#ea580c',
+      weight: 5,
+      dashArray: '8, 8',
+      opacity: 0.95
+    }).addTo(streetConnectorGroup);
+
+    lineSouth.bindPopup(`
+      <div class="text-xs">
+        <h4 class="font-bold text-amber-700 text-sm mb-1">🚦 市區街道導引：往城林橋引道</h4>
+        <p class="text-slate-700"><strong>路線：</strong>學府公園 ➜ 裕民路 ➜ 中華路一段/二段 ➜ 城林橋自行車牽引道。</p>
+        <p class="text-slate-500 mt-1">※ 安全跨越堤防往鶯歌三峽的最佳市區通道！</p>
+      </div>
+    `);
+
+    // 標示街道關鍵地標
+    const createStreetPin = (coords, text, color, title, desc) => {
+      const pinIcon = L.divIcon({
+        className: 'custom-poi-marker',
+        html: `<div style="background-color: ${color}; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold;">${text}</div>`,
+        iconSize: [22, 22],
+        iconAnchor: [11, 11]
+      });
+      const pin = L.marker(coords, { icon: pinIcon }).addTo(streetConnectorGroup);
+      pin.bindPopup(`
+        <div class="text-xs">
+          <h4 class="font-bold text-slate-900 text-sm mb-1">${title}</h4>
+          <p class="text-slate-600">${desc}</p>
+        </div>
+      `);
+      return pin;
+    };
+
+    createStreetPin([24.9890, 121.4452], '捷', '#0284c7', '捷運海山站商圈 (裕民路)', '店家與人潮較多，請放慢車速靠右慢行或牽行。');
+    createStreetPin([24.9965, 121.4425], '橋', '#10b981', '浮洲橋河濱自行車牽引道入口', '由此牽行上陸橋，即可安全跨進大漢溪右岸自行車專用道（往新月橋、大稻埕、淡水）。');
+    createStreetPin([24.9812, 121.4312], '橋', '#10b981', '城林橋河濱自行車牽引道入口', '由此牽行上引道跨越堤防，進入大漢溪右岸自行車道（往鶯歌、三峽）。');
+    createStreetPin([24.9910, 121.4395], '✕', '#ef4444', '擺接堡路平面道路 (危險警示)', '⚠️ 砂石車與大型貨車車速極快，國小同學嚴禁直接騎上擺接堡路平面！請走市區引道。');
+
+    // 街道引導開關監聽
+    const toggleStreet = document.getElementById('toggle-street-connectors');
+    if (toggleStreet) {
+      toggleStreet.addEventListener('change', (e) => {
+        if (e.target.checked) {
+          map.addLayer(streetConnectorGroup);
+        } else {
+          map.removeLayer(streetConnectorGroup);
+        }
+      });
+    }
   }
 
   // 將地圖視野調整到涵蓋全雙北路線
