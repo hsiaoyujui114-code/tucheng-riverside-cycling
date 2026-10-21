@@ -218,7 +218,15 @@
               </button>
             </div>
 
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
+              <label class="flex items-center gap-1.5 cursor-pointer select-none bg-emerald-950/80 px-2.5 py-1 rounded-lg border border-emerald-600/80 hover:bg-emerald-900 text-[11px] text-emerald-300">
+                <input type="checkbox" id="toggle-safety-layer" checked class="rounded text-emerald-500 focus:ring-0">
+                <span class="font-bold flex items-center gap-1">
+                  <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i>
+                  河濱安全防護圖層 (服務站/警示/禁行區)
+                </span>
+              </label>
+
               <label class="flex items-center gap-1.5 cursor-pointer select-none bg-slate-800/90 px-2.5 py-1 rounded-lg border border-slate-700 hover:bg-slate-800 text-[11px] text-amber-300">
                 <input type="checkbox" id="toggle-street-connectors" checked class="rounded text-amber-500 focus:ring-0">
                 <span class="font-semibold flex items-center gap-1">
@@ -246,21 +254,27 @@
           </div>
 
           <!-- 地圖底端圖例 Legend -->
-          <div class="absolute bottom-3 left-3 z-[1000] bg-white/90 backdrop-blur-xs px-3 py-2 rounded-xl shadow-md border border-slate-200 text-[11px] text-slate-700 flex flex-wrap items-center gap-3">
+          <div class="absolute bottom-3 left-3 z-[1000] bg-white/95 backdrop-blur-xs px-3 py-2 rounded-xl shadow-md border border-slate-200 text-[11px] text-slate-700 flex flex-wrap items-center gap-2.5 max-w-[85%]">
             <span class="flex items-center gap-1 font-semibold text-slate-900">
               <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span> 起點(學府公園)
             </span>
+            <span class="flex items-center gap-1 font-semibold text-emerald-700">
+              <span class="w-3 h-1.5 bg-emerald-500 rounded-sm inline-block"></span> 河濱專用道(96%無車)
+            </span>
             <span class="flex items-center gap-1 font-semibold text-amber-700">
-              <span class="w-3 h-1 bg-amber-500 rounded-sm inline-block"></span> 市區街道導引
+              <span class="w-3 h-1 bg-amber-500 rounded-sm inline-block"></span> 市區牽行導引
+            </span>
+            <span class="flex items-center gap-1 font-semibold text-blue-700">
+              <span class="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block"></span> 官方服務站(打氣/急救)
+            </span>
+            <span class="flex items-center gap-1 font-semibold text-amber-600">
+              <span class="w-2.5 h-2.5 rounded-full bg-yellow-400 border border-amber-500 inline-block"></span> 窄胎防滑警示
+            </span>
+            <span class="flex items-center gap-1 font-semibold text-red-600">
+              <span class="w-2.5 h-2.5 rounded-full bg-red-600 inline-block"></span> 砂石車禁行區
             </span>
             <span class="flex items-center gap-1">
               <span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block"></span> 折返點
-            </span>
-            <span class="flex items-center gap-1">
-              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> 風景打卡點
-            </span>
-            <span class="flex items-center gap-1">
-              <span class="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></span> 補水/洗手間
             </span>
           </div>
 
@@ -384,6 +398,46 @@
               <span id="detail-total-outing-time" class="text-lg font-bold text-emerald-950">--</span>
             </div>
             <span class="text-xs text-emerald-800 mt-0.5">向家人報備的最佳時間</span>
+          </div>
+        </div>
+
+        <!-- 🛡️ 河濱專用道安全防護指數看板 (專為小學六年級同學與家長設計) -->
+        <div class="bg-gradient-to-r from-emerald-50 via-teal-50 to-blue-50 border border-emerald-200/90 rounded-2xl p-4 flex flex-col gap-3 shadow-2xs">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-200/60 pb-2">
+            <span class="font-bold text-emerald-900 text-sm flex items-center gap-1.5">
+              <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600"></i>
+              河濱專用道安全防護指數 (水岸封閉無車路網)
+            </span>
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-600 text-white shadow-2xs flex items-center gap-1">
+              <i data-lucide="award" class="w-3 h-3"></i>
+              安全評級：★★★★★ 封閉隔離極高
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div class="bg-white/90 p-3 rounded-xl border border-emerald-100 flex flex-col">
+              <span class="text-slate-500 text-[10px] flex items-center gap-1 font-semibold">
+                <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-600"></i> 河濱專用道佔比
+              </span>
+              <span id="detail-riverside-ratio" class="text-emerald-950 font-bold text-sm mt-0.5">96% 堤外封閉專用道</span>
+              <span class="text-slate-500 text-[10px] mt-0.5">僅市區起迄段約 1.8km 牽引慢行，進入水門後 100% 無汽機車干擾！</span>
+            </div>
+
+            <div class="bg-white/90 p-3 rounded-xl border border-emerald-100 flex flex-col">
+              <span class="text-slate-500 text-[10px] flex items-center gap-1 font-semibold">
+                <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-blue-600"></i> 汽機車混流與紅綠燈
+              </span>
+              <span class="text-blue-950 font-bold text-sm mt-0.5">0 汽機車干擾・0 紅綠燈</span>
+              <span class="text-slate-500 text-[10px] mt-0.5">全程立體交叉引道跨越堤防，不需在一般大馬路與大貨車穿梭！</span>
+            </div>
+
+            <div class="bg-white/90 p-3 rounded-xl border border-emerald-100 flex flex-col">
+              <span class="text-slate-500 text-[10px] flex items-center gap-1 font-semibold">
+                <i data-lucide="wrench" class="w-3.5 h-3.5 text-amber-600"></i> 最近官方救護與維修哨
+              </span>
+              <span id="detail-safety-station" class="text-amber-950 font-bold text-sm mt-0.5">浮洲自行車租借站 (支援打氣/急救)</span>
+              <span class="text-slate-500 text-[10px] mt-0.5">備有法嘴高壓打氣筒、內六角工具組、急救箱與新北專職駐點人員！</span>
+            </div>
           </div>
         </div>
 

@@ -173,6 +173,64 @@ input[type="range"] {
   box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
 }
 
+/* 河濱官方服務站標記 */
+.safety-station-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1d4ed8, #2563eb);
+  color: white;
+  border-radius: 50%;
+  border: 2.5px solid #ffffff;
+  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.4);
+  font-size: 13px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.safety-station-marker:hover {
+  transform: scale(1.25);
+  box-shadow: 0 5px 15px rgba(37, 99, 235, 0.6);
+  z-index: 9999 !important;
+}
+
+/* 公路車安全警示標記 */
+.safety-hazard-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fef08a;
+  color: #854d0e;
+  border-radius: 50%;
+  border: 2px solid #eab308;
+  box-shadow: 0 2px 8px rgba(234, 179, 8, 0.4);
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.safety-hazard-marker:hover {
+  transform: scale(1.25);
+  z-index: 9999 !important;
+}
+
+/* 擺接堡路紅色禁行警戒區標記 */
+.prohibited-warning-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #dc2626;
+  color: white;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 10px rgba(220, 38, 38, 0.5);
+  font-size: 11px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+
 /* 列印專用樣式（騎乘計畫書） */
 @media print {
   body * {

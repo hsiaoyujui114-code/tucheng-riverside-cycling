@@ -124,6 +124,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. 繪製「市區街道導引路線」圖層（學府公園 ➜ 河濱引道）
     initStreetConnectors();
 
+    // 3.5 繪製「河濱專用道安全防護」圖層（官方服務站、危險警示點、擺接堡路警戒帶）
+    initSafetyLayer();
+
     // 4. 繪製所有雙北河濱自行車路線折線 (Polylines)
     routes.forEach(route => {
       const polyline = L.polyline(route.pathPoints, {
@@ -264,6 +267,110 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // ==========================================
+  // 河濱專用道安全防護圖層 (服務站、警示點、擺接堡路警戒帶)
+  // ==========================================
+  let safetyLayerGroup = null;
+
+  function initSafetyLayer() {
+    safetyLayerGroup = L.featureGroup().addTo(map);
+
+    const { riverServiceStations, safetyHazardPoints, prohibitedZone } = window.RIVERSIDE_DATA;
+
+    // 1. 繪製官方河濱自行車租借站/維修服務站 (打氣/急救/加水)
+    if (riverServiceStations) {
+      riverServiceStations.forEach(st => {
+        const stationIcon = L.divIcon({
+          className: 'safety-station-marker',
+          html: `<div style="width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px;">🛡️</div>`,
+          iconSize: [28, 28],
+          iconAnchor: [14, 14]
+        });
+
+        const servicesHtml = st.services.map(s => `<li class="flex items-center gap-1 text-[11px] text-blue-900"><span>✓</span> <span>${s}</span></li>`).join('');
+
+        const marker = L.marker(st.coords, { icon: stationIcon }).addTo(safetyLayerGroup);
+        marker.bindPopup(`
+          <div class="text-xs">
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold text-white bg-blue-600 mb-1 inline-block">官方河濱服務站</span>
+            <h4 class="font-bold text-slate-900 text-sm mb-1">${st.name}</h4>
+            <p class="text-slate-600 mb-2 leading-relaxed">${st.desc}</p>
+            <div class="p-2 bg-blue-50 rounded-lg border border-blue-100 text-[11px]">
+              <p class="font-bold text-blue-950 mb-1">🛠️ 現場免費安全支援服務：</p>
+              <ul class="space-y-0.5">${servicesHtml}</ul>
+            </div>
+          </div>
+        `);
+      });
+    }
+
+    // 2. 繪製公路車窄胎重點安全警示點 (牽引道坡度/防滑/減速)
+    if (safetyHazardPoints) {
+      safetyHazardPoints.forEach(hp => {
+        const hazardIcon = L.divIcon({
+          className: 'safety-hazard-marker',
+          html: `<div style="width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px;">⚠️</div>`,
+          iconSize: [24, 24],
+          iconAnchor: [12, 12]
+        });
+
+        const marker = L.marker(hp.coords, { icon: hazardIcon }).addTo(safetyLayerGroup);
+        marker.bindPopup(`
+          <div class="text-xs">
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold text-amber-900 bg-amber-200 mb-1 inline-block">${hp.title}</span>
+            <h4 class="font-bold text-slate-900 text-sm mb-1">${hp.name}</h4>
+            <p class="text-slate-700 leading-relaxed">${hp.desc}</p>
+          </div>
+        `);
+      });
+    }
+
+    // 3. 繪製土城擺接堡路紅色禁行警戒區 (砂石車主要幹線，小學生絕對禁行)
+    if (prohibitedZone) {
+      const dangerLine = L.polyline(prohibitedZone.path, {
+        color: '#dc2626',
+        weight: 8,
+        dashArray: '12, 10',
+        opacity: 0.7
+      }).addTo(safetyLayerGroup);
+
+      dangerLine.bindPopup(`
+        <div class="text-xs">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold text-white bg-red-600 mb-1 inline-block">小學生絕對禁行區</span>
+          <h4 class="font-bold text-red-700 text-sm mb-1">${prohibitedZone.name}</h4>
+          <p class="text-slate-700 leading-relaxed">${prohibitedZone.warning}</p>
+        </div>
+      `);
+
+      // 在擺接堡路中央放一個警示標籤
+      const dangerIcon = L.divIcon({
+        className: 'prohibited-warning-marker',
+        html: `<div style="width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px;">🚫</div>`,
+        iconSize: [26, 26],
+        iconAnchor: [13, 13]
+      });
+      const dangerMarker = L.marker([24.9860, 121.4380], { icon: dangerIcon }).addTo(safetyLayerGroup);
+      dangerMarker.bindPopup(`
+        <div class="text-xs">
+          <h4 class="font-bold text-red-600 text-sm mb-1">🚫 擺接堡路：砂石車重型幹道</h4>
+          <p class="text-slate-700 leading-relaxed">車速極快且無自行車專用道！小學生請一律走市區引道跨越堤防，請勿進入！</p>
+        </div>
+      `);
+    }
+
+    // 安全防護圖層開關監聽
+    const toggleSafety = document.getElementById('toggle-safety-layer');
+    if (toggleSafety) {
+      toggleSafety.addEventListener('change', (e) => {
+        if (e.target.checked) {
+          map.addLayer(safetyLayerGroup);
+        } else {
+          map.removeLayer(safetyLayerGroup);
+        }
+      });
+    }
+  }
+
   // 將地圖視野調整到涵蓋全雙北路線
   function fitAllRoutes() {
     const allCoords = [];
@@ -359,9 +466,15 @@ document.addEventListener('DOMContentLoaded', () => {
           ${route.name}
         </h3>
         
-        <p class="text-xs text-slate-500 line-clamp-1 mb-2">
+        <p class="text-xs text-slate-500 line-clamp-1 mb-1.5">
           ${route.highlight}
         </p>
+
+        <div class="flex items-center gap-1.5 mb-2">
+          <span class="text-[10px] text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+            <i data-lucide="shield-check" class="w-3 h-3 text-emerald-600"></i> 96% 河濱專用道・無汽機車
+          </span>
+        </div>
 
         <div class="flex items-center justify-between text-[11px] pt-2 border-t border-slate-100 text-slate-600">
           <div class="flex items-center gap-1">
@@ -539,6 +652,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // 安全動線導航文字
     document.getElementById('detail-departure-tip').textContent = route.departureTip;
     document.getElementById('detail-return-tip').textContent = route.returnTip;
+
+    // 安全防護指標更新
+    const ratioEl = document.getElementById('detail-riverside-ratio');
+    if (ratioEl) {
+      ratioEl.textContent = '96% 堤外封閉專用道';
+    }
+    const stationEl = document.getElementById('detail-safety-station');
+    if (stationEl) {
+      let stName = "浮洲自行車租借站 (大漢溪右岸服務中心)";
+      if (route.id === 'route-yingge') stName = "鶯歌自行車租借站 (三鶯之心水岸)";
+      else if (route.id === 'route-bitan') stName = "碧潭自行車租借站 (碧潭水岸)";
+      else if (route.id === 'route-dadaocheng') stName = "大稻埕碼頭自行車服務中心";
+      else if (route.id === 'route-tamsui') stName = "關渡自行車租借站 / 浮洲站";
+      else if (route.id === 'route-metropark') stName = "八里左岸自行車租借站 / 浮洲站";
+      stationEl.textContent = stName;
+    }
 
     // 渲染重要轉折點 (Waypoints)
     const waypointsContainer = document.getElementById('detail-waypoints-list');
