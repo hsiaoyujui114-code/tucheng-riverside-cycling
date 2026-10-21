@@ -219,6 +219,14 @@
             </div>
 
             <div class="flex items-center gap-2 flex-wrap">
+              <label class="flex items-center gap-1.5 cursor-pointer select-none bg-sky-950/80 px-2.5 py-1 rounded-lg border border-sky-600/80 hover:bg-sky-900 text-[11px] text-sky-300">
+                <input type="checkbox" id="toggle-junction-layer" checked class="rounded text-sky-500 focus:ring-0">
+                <span class="font-bold flex items-center gap-1">
+                  <i data-lucide="git-fork" class="w-3.5 h-3.5 text-sky-400"></i>
+                  分岔路口路牌指引
+                </span>
+              </label>
+
               <label class="flex items-center gap-1.5 cursor-pointer select-none bg-emerald-950/80 px-2.5 py-1 rounded-lg border border-emerald-600/80 hover:bg-emerald-900 text-[11px] text-emerald-300">
                 <input type="checkbox" id="toggle-safety-layer" checked class="rounded text-emerald-500 focus:ring-0">
                 <span class="font-bold flex items-center gap-1">
@@ -263,6 +271,9 @@
             </span>
             <span class="flex items-center gap-1 font-semibold text-amber-700">
               <span class="w-3 h-1 bg-amber-500 rounded-sm inline-block"></span> 市區牽行導引
+            </span>
+            <span class="flex items-center gap-1 font-semibold text-sky-700">
+              <span class="w-2.5 h-2.5 rounded-full bg-sky-500 inline-block"></span> 🔀 分岔路口路牌
             </span>
             <span class="flex items-center gap-1 font-semibold text-blue-700">
               <span class="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block"></span> 官方服務站(打氣/急救)
@@ -438,6 +449,28 @@
               <span id="detail-safety-station" class="text-amber-950 font-bold text-sm mt-0.5">浮洲自行車租借站 (支援打氣/急救)</span>
               <span class="text-slate-500 text-[10px] mt-0.5">備有法嘴高壓打氣筒、內六角工具組、急救箱與新北專職駐點人員！</span>
             </div>
+          </div>
+        </div>
+
+        <!-- 🔀 本路線重要分岔路口轉向指南 (路口走哪裡一眼看懂) -->
+        <div class="bg-gradient-to-r from-sky-50 via-indigo-50 to-blue-50 border border-sky-200/90 rounded-2xl p-4 flex flex-col gap-3 shadow-2xs">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-sky-200/60 pb-2">
+            <div>
+              <span class="font-bold text-sky-950 text-sm flex items-center gap-1.5">
+                <i data-lucide="git-fork" class="w-4 h-4 text-sky-600"></i>
+                本路線關鍵分岔路口轉向指南（路口走哪裡一眼看懂）
+              </span>
+              <p class="text-[11px] text-sky-700 mt-0.5">專為小騎士整理：依騎乘順序經過的重要分岔路口與橋下引道決策點</p>
+            </div>
+            <span class="text-xs text-sky-800 bg-sky-100/80 px-2.5 py-1 rounded-lg border border-sky-200 flex items-center gap-1 font-semibold">
+              <i data-lucide="map-pin" class="w-3.5 h-3.5 text-sky-600"></i>
+              點擊「地圖定位」可立即放大該分岔口
+            </span>
+          </div>
+
+          <!-- 分岔路口動態卡片清單 -->
+          <div id="detail-junctions-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+            <!-- 由 JS 動態注入 -->
           </div>
         </div>
 

@@ -127,6 +127,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3.5 繪製「河濱專用道安全防護」圖層（官方服務站、危險警示點、擺接堡路警戒帶）
     initSafetyLayer();
 
+    // 3.6 繪製「分岔路口路牌指引」圖層（指引路牌與轉向決策）
+    initJunctionLayer();
+
     // 4. 繪製所有雙北河濱自行車路線折線 (Polylines)
     routes.forEach(route => {
       const polyline = L.polyline(route.pathPoints, {
@@ -371,6 +374,127 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // ==========================================
+  // 重要分岔路口路牌指引圖層 (轉向決策與路牌卡片)
+  // ==========================================
+  let junctionMarkerGroup = null;
+  const junctionMarkers = {};
+  let directionArrowGroup = null;
+
+  function initJunctionLayer() {
+    junctionMarkerGroup = L.featureGroup().addTo(map);
+    directionArrowGroup = L.featureGroup().addTo(map);
+
+    const { criticalJunctions } = window.RIVERSIDE_DATA;
+    if (!criticalJunctions) return;
+
+    criticalJunctions.forEach(j => {
+      const icon = L.divIcon({
+        className: `junction-signpost-marker junction-${j.id}`,
+        html: `<div style="width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px;">🔀</div>`,
+        iconSize: [28, 28],
+        iconAnchor: [14, 14]
+      });
+
+      const marker = L.marker(j.coords, { icon: icon }).addTo(junctionMarkerGroup);
+
+      const decisionsHtml = j.decisions.map(d => `
+        <div class="p-2 rounded-lg bg-sky-50/80 border border-sky-100 mb-1.5 text-[11px]">
+          <div class="font-bold text-sky-950 flex items-center gap-1">
+            <span>${d.direction}</span>
+          </div>
+          <p class="text-slate-700 mt-0.5"><strong>通往：</strong>${d.destination}</p>
+          <p class="text-slate-500 text-[10px] mt-0.5">${d.action}</p>
+        </div>
+      `).join('');
+
+      marker.bindPopup(`
+        <div class="text-xs max-w-[270px]">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold text-white bg-sky-600 mb-1 inline-block">🔀 ${j.badge}</span>
+          <h4 class="font-bold text-slate-900 text-sm mb-1">${j.name}</h4>
+          <p class="text-slate-600 mb-2 leading-relaxed">${j.summary}</p>
+          
+          <div class="mb-2">
+            <span class="font-bold text-slate-800 text-[11px] block mb-1">🧭 分岔路口路牌（選哪條走）：</span>
+            ${decisionsHtml}
+          </div>
+
+          <div class="p-1.5 rounded bg-amber-50 border border-amber-200 text-amber-900 text-[10px]">
+            ⚠️ <strong>小騎士提醒：</strong>${j.safetyTip}
+          </div>
+        </div>
+      `);
+
+      junctionMarkers[j.id] = marker;
+    });
+
+    // 分岔路口圖層開關監聽
+    const toggleJunction = document.getElementById('toggle-junction-layer');
+    if (toggleJunction) {
+      toggleJunction.addEventListener('change', (e) => {
+        if (e.target.checked) {
+          map.addLayer(junctionMarkerGroup);
+          map.addLayer(directionArrowGroup);
+        } else {
+          map.removeLayer(junctionMarkerGroup);
+          map.removeLayer(directionArrowGroup);
+        }
+      });
+    }
+  }
+
+  // 繪製沿線前進方向箭頭 (讓小騎士清楚知道往哪邊前進)
+  function updateDirectionArrows(route) {
+    if (!directionArrowGroup) return;
+    directionArrowGroup.clearLayers();
+
+    const points = route.pathPoints;
+    if (!points || points.length < 4) return;
+
+    // 每間隔約 8-10 個點放置一個方向箭頭
+    const step = Math.max(6, Math.floor(points.length / 10));
+
+    for (let i = 2; i < points.length - 2; i += step) {
+      const p1 = points[i];
+      const p2 = points[i + 1];
+
+      // 計算方位角度 (從 p1 指向 p2)
+      const latDiff = p2[0] - p1[0];
+      const lngDiff = p2[1] - p1[1];
+      const angleDeg = Math.atan2(lngDiff, latDiff) * (180 / Math.PI);
+
+      const arrowIcon = L.divIcon({
+        className: 'route-direction-arrow',
+        html: `<div style="transform: rotate(${angleDeg}deg); color: ${route.color}; font-size: 16px; font-weight: bold; text-shadow: 0 0 3px #ffffff, 0 0 6px #ffffff; line-height: 1; display: flex; align-items: center; justify-content: center;">▲</div>`,
+        iconSize: [18, 18],
+        iconAnchor: [9, 9]
+      });
+
+      L.marker(p1, { icon: arrowIcon, interactive: false }).addTo(directionArrowGroup);
+    }
+  }
+
+  // 更新本路線經過的分岔路口標記高亮狀態
+  function updateActiveJunctionMarkers(routeId) {
+    const { criticalJunctions } = window.RIVERSIDE_DATA;
+    if (!criticalJunctions) return;
+
+    criticalJunctions.forEach(j => {
+      const marker = junctionMarkers[j.id];
+      if (marker) {
+        const el = marker.getElement();
+        const applies = j.decisions.some(d => d.suitableRoutes.includes(routeId));
+        if (el) {
+          if (applies) {
+            el.classList.add('active-junction');
+          } else {
+            el.classList.remove('active-junction');
+          }
+        }
+      }
+    });
+  }
+
   // 將地圖視野調整到涵蓋全雙北路線
   function fitAllRoutes() {
     const allCoords = [];
@@ -546,6 +670,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // 4. 更新 POI 地標標記
     updateMapMarkers(route);
 
+    // 4.5 更新路線前進方向箭頭
+    updateDirectionArrows(route);
+
+    // 4.6 高亮本路線經過的分岔路口標記
+    updateActiveJunctionMarkers(routeId);
+
     // 5. 更新頂部快速看板與下方詳細面板
     updateQuickStats(route);
     renderDetailPanel(route);
@@ -720,6 +850,95 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-generate-card-for-route').onclick = () => {
       openPlanModal(route);
     };
+
+    // 渲染本路線的分岔路口指引卡片
+    renderJunctionsList(route);
+
+    lucide.createIcons();
+  }
+
+  // ==========================================
+  // 6.5 渲染本路線分岔路口轉向指引卡片清單
+  // ==========================================
+  function renderJunctionsList(route) {
+    const container = document.getElementById('detail-junctions-list');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const { criticalJunctions, startPoint } = window.RIVERSIDE_DATA;
+    if (!criticalJunctions) return;
+
+    // 篩選出適用於該路線的分岔路口
+    const applicableJunctions = [];
+
+    criticalJunctions.forEach(j => {
+      const matchedDecision = j.decisions.find(d => d.suitableRoutes.includes(route.id));
+      if (matchedDecision) {
+        // 計算從起點的直線距離以利排序
+        const dist = Math.hypot(j.coords[0] - startPoint[0], j.coords[1] - startPoint[1]);
+        applicableJunctions.push({
+          junction: j,
+          decision: matchedDecision,
+          dist: dist
+        });
+      }
+    });
+
+    // 依距離由近到遠排序（順著騎行路線推進）
+    applicableJunctions.sort((a, b) => a.dist - b.dist);
+
+    if (applicableJunctions.length === 0) {
+      container.innerHTML = `<div class="col-span-full p-3 bg-white rounded-xl text-center text-slate-400 text-xs">此路線主線筆直平坦，依河濱標線直行即可。</div>`;
+      return;
+    }
+
+    applicableJunctions.forEach((item, index) => {
+      const j = item.junction;
+      const dec = item.decision;
+
+      const card = document.createElement('div');
+      card.className = 'p-3 bg-white rounded-xl border border-sky-100 shadow-2xs flex flex-col justify-between gap-2.5 transition hover:shadow-xs';
+
+      card.innerHTML = `
+        <div>
+          <div class="flex items-center justify-between gap-1 mb-1.5">
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-100 text-sky-800">
+              第 ${index + 1} 處分岔口
+            </span>
+            <span class="text-[10px] text-slate-400 font-medium">${j.badge}</span>
+          </div>
+
+          <h4 class="font-bold text-slate-900 text-xs mb-1">${j.name}</h4>
+
+          <div class="p-2 rounded-lg bg-emerald-50 border border-emerald-200/80 text-emerald-950 mb-1.5">
+            <span class="font-bold text-xs flex items-center gap-1 text-emerald-800">
+              ${dec.direction}
+            </span>
+            <p class="text-[11px] text-emerald-900 mt-0.5 font-medium leading-relaxed">${dec.action}</p>
+          </div>
+
+          <p class="text-slate-500 text-[10px]"><strong>通往：</strong>${dec.destination}</p>
+        </div>
+
+        <div class="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+          <span class="text-[10px] text-amber-700 truncate" title="${j.safetyTip}">⚠️ ${j.safetyTip.slice(0, 16)}...</span>
+          <button class="btn-locate-junction shrink-0 px-2.5 py-1 rounded-md text-[11px] font-bold bg-sky-600 hover:bg-sky-700 text-white transition flex items-center gap-1 shadow-2xs">
+            <i data-lucide="navigation" class="w-3 h-3"></i>
+            <span>地圖定位</span>
+          </button>
+        </div>
+      `;
+
+      card.querySelector('.btn-locate-junction').addEventListener('click', () => {
+        map.flyTo(j.coords, 16, { duration: 1.0 });
+        const marker = junctionMarkers[j.id];
+        if (marker) {
+          setTimeout(() => marker.openPopup(), 1100);
+        }
+      });
+
+      container.appendChild(card);
+    });
 
     lucide.createIcons();
   }
