@@ -147,7 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       // 滑鼠懸停提示
-      polyline.bindTooltip(`<strong>${route.name}</strong><br>來回：${route.roundTripDistanceKm} km`, {
+      polyline.bindTooltip(`<strong>${route.name}</strong><br>🌊 全程 96% 堤外水岸專用道 (零汽機車)<br>來回總長：${route.roundTripDistanceKm} km`, {
         sticky: true
       });
 
@@ -646,8 +646,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const polyline = polylineLayers[id];
       if (id === routeId) {
         polyline.setStyle({
-          weight: 6,
-          opacity: 0.95
+          weight: 8,
+          opacity: 0.98
         });
         polyline.bringToFront();
       } else {
