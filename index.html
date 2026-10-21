@@ -2,9 +2,17 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>土城學府公園・小騎士雙北河濱單車探索地圖</title>
   
+  <!-- PWA & 離線設定 -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0284c7">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="小騎士單車">
+
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   
@@ -41,55 +49,112 @@
     }
   </script>
 </head>
-<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+<body class="bg-slate-900 text-slate-100 antialiased min-h-screen flex flex-col selection:bg-cyan-500 selection:text-white">
 
-  <!-- 頂部導航列 Header -->
-  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-3">
+  <!-- 頂部導航列 Header (科技黑底航電風格) -->
+  <header class="bg-slate-950/95 border-b border-cyan-900/40 sticky top-0 z-40 backdrop-blur-md shadow-lg shadow-black/30">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 flex flex-wrap items-center justify-between gap-3">
+      
       <!-- 標題與 LOGO -->
       <div class="flex items-center space-x-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-cyan-500/20 ring-1 ring-cyan-400/40">
           <i data-lucide="bike" class="w-6 h-6"></i>
         </div>
         <div>
           <div class="flex items-center gap-2">
-            <h1 class="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">土城學府公園・小騎士雙北河濱單車地圖</h1>
-            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">
+            <h1 class="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-1.5">
+              <span>土城學府公園・小騎士河濱單車</span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono">HUD v2.0</span>
+            </h1>
+            <span class="hidden md:inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/30">
               公路車折返指南 (非環線)
             </span>
           </div>
-          <p class="text-xs text-slate-500 hidden sm:block">專為小學六年級同學設計・土城出發雙北河濱自行車道・安全路線與往返時間試算</p>
+          <p class="text-[11px] text-slate-400 hidden sm:block">專為六年級同學打造・土城出發雙北河濱・離線分岔指引・高壓輪胎安全指南</p>
         </div>
       </div>
 
-        <button id="btn-open-game-modal" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-700 hover:to-indigo-700 transition shadow-sm shadow-indigo-500/20">
+      <!-- 右側動作按鈕組 -->
+      <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+        
+        <!-- 離線設定與無網路速查手冊 按鈕 -->
+        <button id="btn-open-offline-modal" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-sky-600 to-cyan-600 text-white hover:from-sky-500 hover:to-cyan-500 transition shadow-sm shadow-cyan-500/25 ring-1 ring-cyan-400/50">
+          <i data-lucide="download-cloud" class="w-4 h-4"></i>
+          <span>離線設定</span>
+          <span id="header-offline-badge" class="px-1.5 py-0.2 rounded-full text-[9px] bg-cyan-300 text-slate-900 font-bold">100% 離線</span>
+        </button>
+
+        <!-- 公路車輪胎科技與保養指南 按鈕 -->
+        <button id="btn-open-tire-modal" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-amber-300 hover:bg-slate-700 hover:text-amber-200 transition border border-amber-500/40 shadow-xs">
+          <i data-lucide="disc" class="w-4 h-4 text-amber-400"></i>
+          <span>輪胎科技</span>
+        </button>
+
+        <!-- 破風小遊戲 按鈕 -->
+        <button id="btn-open-game-modal" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-500 hover:to-indigo-500 transition shadow-xs">
           <i data-lucide="gamepad-2" class="w-4 h-4"></i>
-          <span>破風小遊戲</span>
+          <span class="hidden xs:inline">破風遊戲</span>
         </button>
 
-        <button id="btn-open-checklist" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100 transition border border-blue-200 shadow-2xs">
-          <i data-lucide="clipboard-check" class="w-4 h-4 text-blue-600"></i>
-          <span>行前檢核</span>
-          <span id="checklist-counter-badge" class="ml-0.5 px-1.5 py-0.2 rounded-full text-[10px] bg-blue-600 text-white">0/8</span>
+        <!-- 行前安全檢核 按鈕 -->
+        <button id="btn-open-checklist" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-200 hover:bg-slate-700 transition border border-slate-700 shadow-2xs">
+          <i data-lucide="clipboard-check" class="w-3.5 h-3.5 text-blue-400"></i>
+          <span class="hidden sm:inline">行前檢核</span>
+          <span id="checklist-counter-badge" class="px-1.5 py-0.2 rounded-full text-[10px] bg-blue-600 text-white">0/8</span>
         </button>
 
-        <button id="btn-open-departure-guide" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 text-amber-800 hover:bg-amber-100 transition border border-amber-200 shadow-2xs">
-          <i data-lucide="shield-alert" class="w-4 h-4 text-amber-600"></i>
-          <span class="hidden xs:inline">如何進河濱？</span>
-          <span class="xs:hidden">進河濱</span>
+        <!-- 如何進河濱 按鈕 -->
+        <button id="btn-open-departure-guide" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-200 hover:bg-slate-700 transition border border-slate-700 shadow-2xs">
+          <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-amber-400"></i>
+          <span>進河濱</span>
         </button>
 
-        <button id="btn-open-plan-modal" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition border border-emerald-200 shadow-2xs">
-          <i data-lucide="share-2" class="w-4 h-4 text-emerald-600"></i>
-          <span>騎乘計畫單</span>
+        <!-- 騎乘計畫單 按鈕 -->
+        <button id="btn-open-plan-modal" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-950/80 text-emerald-300 hover:bg-emerald-900 transition border border-emerald-600/50 shadow-2xs">
+          <i data-lucide="share-2" class="w-3.5 h-3.5 text-emerald-400"></i>
+          <span class="hidden sm:inline">計畫單</span>
         </button>
 
-        <button id="btn-open-github-modal" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100 transition border border-slate-200" title="查看 GitHub Pages 部署說明">
+        <!-- GitHub 按鈕 -->
+        <button id="btn-open-github-modal" class="inline-flex items-center p-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition border border-slate-800" title="查看 GitHub Pages 部署說明">
           <i data-lucide="github" class="w-4 h-4"></i>
         </button>
       </div>
     </div>
   </header>
+
+  <!-- 🛰️ 航電座艙即時遙測條 (Cockpit Telemetry HUD Strip) -->
+  <div class="cyber-cockpit-bar px-4 py-1.5 text-slate-300 text-[11px] overflow-x-auto whitespace-nowrap">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <!-- 網路狀態指示器 -->
+        <div id="net-status-indicator" class="flex items-center gap-1.5 font-mono text-[11px] bg-slate-900/90 px-2.5 py-1 rounded-md border border-cyan-800/40">
+          <span id="net-status-dot" class="net-status-dot net-status-online"></span>
+          <span id="net-status-text" class="text-emerald-400 font-semibold">網路連線正常・離線已快取</span>
+        </div>
+
+        <!-- GPS 起點鎖定遙測 -->
+        <div class="hidden md:flex items-center gap-1 text-slate-400 font-mono">
+          <i data-lucide="satellite" class="w-3 h-3 text-cyan-400"></i>
+          <span>起點：土城學府公園 [24.9868°N, 121.4502°E]</span>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 font-mono text-[11px]">
+        <!-- 公路車設定提示 -->
+        <div class="flex items-center gap-1.5 text-amber-300 bg-amber-950/40 px-2 py-0.5 rounded border border-amber-600/30">
+          <i data-lucide="gauge" class="w-3 h-3 text-amber-400"></i>
+          <span>車型規格: 700×25C 高壓輪組 (80-85 PSI)</span>
+        </div>
+
+        <!-- 封閉道比例 -->
+        <div class="hidden sm:flex items-center gap-1 text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-600/30">
+          <i data-lucide="shield-check" class="w-3 h-3"></i>
+          <span>專用道比例: 96% 堤外封閉零汽車</span>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- 速度與騎乘時間動態試算欄 -->
   <section class="bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white py-3 px-4 shadow-inner">
@@ -865,6 +930,363 @@ git push -u origin main</pre>
           </div>
         </div>
 
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 彈窗 6：📦 離線設定與無網路速查手冊 ==================== -->
+  <div id="modal-offline-guide" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 hidden">
+    <div class="bg-slate-900 text-white rounded-2xl max-w-3xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-cyan-800/60 overflow-hidden">
+      <!-- 標題欄 -->
+      <div class="px-5 py-4 border-b border-cyan-900/50 flex items-center justify-between bg-gradient-to-r from-slate-950 via-slate-900 to-cyan-950">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-500 to-cyan-500 text-white flex items-center justify-center shadow-md shadow-cyan-500/30">
+            <i data-lucide="download-cloud" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-white text-base flex items-center gap-2">
+              <span>無網路離線設定 & 河濱分岔路口隨身手冊</span>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-700 font-mono">0 流量模式</span>
+            </h3>
+            <p class="text-xs text-slate-400">出門手機沒網路也不怕！在家先下載，離線看地圖與路口轉彎完全沒問題</p>
+          </div>
+        </div>
+        <button class="btn-close-modal text-slate-400 hover:text-white p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- 內容滾動區 -->
+      <div class="p-4 sm:p-6 overflow-y-auto flex-1 space-y-6 text-xs text-slate-300">
+        
+        <!-- 區塊 1：離線快取控制台 -->
+        <div class="bg-slate-950/80 border border-cyan-900/50 rounded-xl p-4 flex flex-col gap-3 shadow-inner">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
+            <span class="font-bold text-cyan-300 text-sm flex items-center gap-1.5">
+              <i data-lucide="hard-drive" class="w-4 h-4 text-cyan-400"></i>
+              手機本地快取儲存狀態
+            </span>
+            <span id="cache-status-badge" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-600/50">
+              🟢 檢測快取中...
+            </span>
+          </div>
+
+          <p class="text-slate-400 leading-relaxed text-[11px]">
+            點擊下方按鈕，系統會將本網站的所有網頁、地圖核心程式碼、7大路線資料、8個分岔路口決策指南與小遊戲，完整下載並儲存在你手機的離線快取中。
+          </p>
+
+          <!-- 下載進度條 -->
+          <div id="cache-progress-container" class="hidden flex flex-col gap-1.5">
+            <div class="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
+              <div id="cache-progress-bar" class="bg-gradient-to-r from-sky-500 to-cyan-400 h-2.5 rounded-full w-0 transition-all duration-300"></div>
+            </div>
+            <span id="cache-progress-text" class="text-[10px] text-cyan-400 font-mono text-right">0%</span>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-between gap-3 pt-1">
+            <span id="cache-status-msg" class="text-slate-400 text-[11px]">
+              建議在學府公園集合出發前，於家中或捷運站 Wi-Fi 先點擊預載！
+            </span>
+            <button id="btn-cache-offline-now" class="px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-sky-500 to-cyan-500 hover:from-sky-400 hover:to-cyan-400 text-slate-950 transition shadow-md shadow-cyan-500/25 flex items-center gap-1.5 shrink-0">
+              <i data-lucide="zap" class="w-4 h-4"></i>
+              <span>立即預載全站離線包</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 區塊 2：手機 PWA 加入主畫面教學 -->
+        <div class="bg-slate-950/60 border border-slate-800 rounded-xl p-4 flex flex-col gap-3">
+          <span class="font-bold text-white text-sm flex items-center gap-1.5">
+            <i data-lucide="smartphone" class="w-4 h-4 text-sky-400"></i>
+            如何將地圖加到手機桌面（免開瀏覽器、0網路秒開）
+          </span>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+            <!-- iPhone 教學 -->
+            <div class="p-3 rounded-lg bg-slate-900 border border-slate-800 flex flex-col gap-2">
+              <div class="flex items-center gap-1.5 font-bold text-sky-300">
+                <i data-lucide="apple" class="w-4 h-4"></i>
+                <span>iPhone / iPad (Safari 瀏覽器)</span>
+              </div>
+              <ol class="list-decimal list-inside space-y-1 text-slate-300 text-[11px] leading-relaxed">
+                <li>用 <strong>Safari</strong> 開啟本網頁。</li>
+                <li>點擊底部中央的 <strong>「分享 📤」</strong> 圖標。</li>
+                <li>向上滑動選單，點選 <strong>「加入主畫面 ➕」</strong>。</li>
+                <li>點右上角「新增」，手機桌面就有專屬小騎士 App，開飛航模式也能秒看！</li>
+              </ol>
+            </div>
+
+            <!-- Android 教學 -->
+            <div class="p-3 rounded-lg bg-slate-900 border border-slate-800 flex flex-col gap-2">
+              <div class="flex items-center gap-1.5 font-bold text-emerald-300">
+                <i data-lucide="play" class="w-4 h-4"></i>
+                <span>Android 安卓手機 (Chrome 瀏覽器)</span>
+              </div>
+              <ol class="list-decimal list-inside space-y-1 text-slate-300 text-[11px] leading-relaxed">
+                <li>用 <strong>Chrome</strong> 開啟本網頁。</li>
+                <li>點擊瀏覽器右上角的 <strong>「三個點 ⋮」</strong> 選單。</li>
+                <li>選擇 <strong>「安裝應用程式」</strong> 或 <strong>「加到主螢幕」</strong>。</li>
+                <li>桌面自動生成單車地圖圖示，無網路隨點隨看！</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+        <!-- 區塊 3：河濱分岔路口隨身速查口袋本 (0 網路保證可用) -->
+        <div class="bg-slate-950/80 border border-cyan-900/40 rounded-xl p-4 flex flex-col gap-3">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
+            <div>
+              <span class="font-bold text-amber-300 text-sm flex items-center gap-1.5">
+                <i data-lucide="git-fork" class="w-4 h-4 text-amber-400"></i>
+                河濱關鍵分岔路口・無網路隨身速查口袋本
+              </span>
+              <p class="text-[11px] text-slate-400 mt-0.5">
+                在河濱分岔口迷惘時，拿出手機照著下方的地標與箭頭走，絕對不會走錯！
+              </p>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <!-- 路線篩選器 -->
+              <select id="offline-junction-filter" class="bg-slate-800 text-white rounded-lg px-2.5 py-1 text-xs border border-slate-700">
+                <option value="all">顯示全部 8 個重要路口</option>
+                <option value="route-xinyue">新月橋天空步道線</option>
+                <option value="route-yingge">鶯歌陶瓷老街線</option>
+                <option value="route-dinosaur">中和恐龍園區線</option>
+                <option value="route-dadaocheng">大稻埕碼頭貨櫃市集</option>
+                <option value="route-bitan">新店碧潭吊橋線</option>
+                <option value="route-metropark">三重都會公園水漾線</option>
+                <option value="route-tamsui">淡水老街金色水岸線</option>
+              </select>
+
+              <button id="btn-print-offline-pocket" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1">
+                <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                <span>列印卡片</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 口袋路口卡片容器 -->
+          <div id="offline-pocket-print-area" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[380px] overflow-y-auto pr-1">
+            <!-- JS 動態生成 -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 底端動作 -->
+      <div class="p-4 border-t border-slate-800 bg-slate-950 flex items-center justify-between">
+        <span class="text-[11px] text-slate-400">
+          💡 小提醒：就算地圖圖磚在極少數角落沒載出，口袋本的文字與箭頭依然 100% 隨身指引！
+        </span>
+        <button class="btn-close-modal px-4 py-1.5 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-white transition border border-slate-700">
+          了解，我準備好了！
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 彈窗 7：🔬 公路車輪胎科技與行前保養指南 ==================== -->
+  <div id="modal-tire-guide" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 hidden">
+    <div class="bg-slate-900 text-white rounded-2xl max-w-3xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-amber-600/40 overflow-hidden">
+      <!-- 標題欄 -->
+      <div class="px-5 py-4 border-b border-amber-900/50 flex items-center justify-between bg-gradient-to-r from-slate-950 via-slate-900 to-amber-950">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-500 text-slate-950 flex items-center justify-center shadow-md shadow-amber-500/30">
+            <i data-lucide="disc" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-white text-base flex items-center gap-2">
+              <span>小學生公路車輪胎科技與保養指南</span>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-700 font-mono">TECH LAB</span>
+            </h3>
+            <p class="text-xs text-amber-200/70">高壓細胎科學・防蛇咬爆胎・雨天濕滑防摔・出門前 60 秒安全硬體必查</p>
+          </div>
+        </div>
+        <button class="btn-close-modal text-slate-400 hover:text-white p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- 內容滾動區 -->
+      <div class="p-4 sm:p-6 overflow-y-auto flex-1 space-y-6 text-xs text-slate-300">
+        
+        <!-- 區塊 1：即時體重胎壓計算機 -->
+        <div class="bg-slate-950/90 border border-amber-500/30 rounded-xl p-4 flex flex-col gap-3 shadow-inner">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <span class="font-bold text-amber-300 text-sm flex items-center gap-1.5">
+              <i data-lucide="gauge" class="w-4 h-4 text-amber-400"></i>
+              六年級小騎士專屬・公路車最佳胎壓試算
+            </span>
+            <span class="text-[11px] text-slate-400">公路車細胎高壓是防蛇咬的核心秘密！</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center pt-1">
+            <!-- 體重輸入滑桿 -->
+            <div class="flex flex-col gap-1.5 sm:col-span-2">
+              <div class="flex items-center justify-between">
+                <span class="text-slate-300 font-medium">騎士體重 (含背包與水壺)：</span>
+                <span id="tire-weight-display" class="font-mono font-bold text-amber-300 text-sm">45 kg</span>
+              </div>
+              <input type="range" id="tire-weight-slider" min="35" max="65" value="45" step="1" class="w-full h-2 bg-slate-800 rounded-lg cursor-pointer">
+              <div class="flex justify-between text-[10px] text-slate-500">
+                <span>35 kg (輕盈)</span>
+                <span>45 kg (六年級平均)</span>
+                <span>65 kg (高壯)</span>
+              </div>
+            </div>
+
+            <!-- 計算結果看板 -->
+            <div class="bg-amber-950/50 border border-amber-500/40 rounded-xl p-3 flex flex-col items-center justify-center text-center">
+              <span class="text-[10px] text-amber-300/80">推薦 700x25c 胎壓</span>
+              <span id="calculated-psi-display" class="font-mono font-black text-2xl text-amber-300 tracking-tight">82 PSI</span>
+              <span class="text-[10px] text-slate-400 mt-0.5">(28c 胎建議打 74 PSI)</span>
+            </div>
+          </div>
+
+          <!-- 拇指檢驗手感說明 -->
+          <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-[11px] flex items-center gap-2">
+            <i data-lucide="hand" class="w-4 h-4 text-amber-400 shrink-0"></i>
+            <span id="psi-thumb-feel-desc" class="text-slate-300">
+              👉 <strong>手感檢驗法：</strong>雙手大拇指使勁全力掐壓輪胎側邊，手感必須像「硬磚塊」幾乎掐不下，才算合格！
+            </span>
+          </div>
+        </div>
+
+        <!-- 區塊 2：科技公路車戰駒結構剖析圖 -->
+        <div class="bike-tech-schematic rounded-xl p-4 flex flex-col gap-3">
+          <div class="flex items-center justify-between border-b border-cyan-800/50 pb-2">
+            <span class="font-bold text-cyan-300 text-sm flex items-center gap-1.5">
+              <i data-lucide="cpu" class="w-4 h-4 text-cyan-400"></i>
+              公路車戰駒科技部位安全重點
+            </span>
+            <span class="font-mono text-[10px] text-cyan-400">AERO GEOMETRY</span>
+          </div>
+
+          <!-- SVG 科技感單車結構圖 -->
+          <div class="w-full flex justify-center py-2">
+            <svg viewBox="0 0 600 240" class="w-full max-w-lg h-auto select-none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="neon-cyan-grad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#06b6d4"/>
+                  <stop offset="100%" stop-color="#3b82f6"/>
+                </linearGradient>
+                <linearGradient id="glow-gold" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#f59e0b"/>
+                  <stop offset="100%" stop-color="#fbbf24"/>
+                </linearGradient>
+              </defs>
+
+              <!-- 後輪 (Deep-section Wheel) -->
+              <circle cx="120" cy="150" r="60" fill="none" stroke="#1e293b" stroke-width="8"/>
+              <circle cx="120" cy="150" r="56" fill="none" stroke="#0284c7" stroke-width="1.5" stroke-dasharray="4 2"/>
+              <circle cx="120" cy="150" r="64" fill="none" stroke="#38bdf8" stroke-width="2"/>
+              <!-- 後輪軸心與快拆標記 -->
+              <circle cx="120" cy="150" r="7" fill="#f59e0b"/>
+              <text x="120" y="153" font-size="7" fill="#000" font-weight="bold" text-anchor="middle">QR</text>
+
+              <!-- 前輪 (Deep-section Wheel) -->
+              <circle cx="480" cy="150" r="60" fill="none" stroke="#1e293b" stroke-width="8"/>
+              <circle cx="480" cy="150" r="56" fill="none" stroke="#0284c7" stroke-width="1.5" stroke-dasharray="4 2"/>
+              <circle cx="480" cy="150" r="64" fill="none" stroke="#38bdf8" stroke-width="2"/>
+              <!-- 前輪軸心與快拆標記 -->
+              <circle cx="480" cy="150" r="7" fill="#f59e0b"/>
+              <text x="480" y="153" font-size="7" fill="#000" font-weight="bold" text-anchor="middle">QR</text>
+
+              <!-- 五通 Bottom Bracket (BB) -->
+              <circle cx="260" cy="150" r="14" fill="#0f172a" stroke="#06b6d4" stroke-width="2"/>
+              <circle cx="260" cy="150" r="6" fill="#f59e0b"/>
+
+              <!-- 車架管材 (Aero Diamond Frame) -->
+              <!-- 後下叉 (Chainstay) -->
+              <line x1="120" y1="150" x2="260" y2="150" stroke="url(#neon-cyan-grad)" stroke-width="4" stroke-linecap="round"/>
+              <!-- 後上叉 (Seatstay) -->
+              <line x1="120" y1="150" x2="230" y2="70" stroke="url(#neon-cyan-grad)" stroke-width="3" stroke-linecap="round"/>
+              <!-- 立管 (Seat Tube) -->
+              <line x1="260" y1="150" x2="230" y2="70" stroke="url(#neon-cyan-grad)" stroke-width="4" stroke-linecap="round"/>
+              <!-- 坐管與坐墊 -->
+              <line x1="230" y1="70" x2="220" y2="40" stroke="#64748b" stroke-width="4"/>
+              <path d="M195 40 Q225 35 250 42 Q230 46 205 45 Z" fill="#f8fafc"/>
+
+              <!-- 下管 (Down Tube) -->
+              <line x1="260" y1="150" x2="420" y2="60" stroke="url(#neon-cyan-grad)" stroke-width="5" stroke-linecap="round"/>
+              <!-- 上管 (Top Tube) -->
+              <line x1="230" y1="70" x2="415" y2="60" stroke="url(#neon-cyan-grad)" stroke-width="4" stroke-linecap="round"/>
+              <!-- 頭管 (Head Tube) -->
+              <line x1="415" y1="60" x2="430" y2="80" stroke="url(#neon-cyan-grad)" stroke-width="6" stroke-linecap="round"/>
+              <!-- 前叉 (Fork) -->
+              <line x1="430" y1="80" x2="480" y2="150" stroke="url(#neon-cyan-grad)" stroke-width="4" stroke-linecap="round"/>
+
+              <!-- 公路車彎把 (Drop Handlebars) -->
+              <path d="M415 50 L 435 45 Q 455 45 455 65 Q 455 85 435 85" fill="none" stroke="#f8fafc" stroke-width="3.5" stroke-linecap="round"/>
+
+              <!-- 科技標註線與呼叫標籤 -->
+              <!-- 1. 前輪高壓細胎 -->
+              <line x1="480" y1="214" x2="510" y2="230" stroke="#38bdf8" stroke-width="1"/>
+              <circle cx="480" cy="214" r="3" fill="#38bdf8"/>
+              <text x="515" y="234" font-size="9" fill="#38bdf8" font-family="monospace">700×25C 高壓細胎 (80-85 PSI)</text>
+
+              <!-- 2. 快拆桿 CLOSE -->
+              <line x1="480" y1="150" x2="520" y2="120" stroke="#f59e0b" stroke-width="1"/>
+              <circle cx="480" cy="150" r="3" fill="#f59e0b"/>
+              <text x="525" y="123" font-size="9" fill="#f59e0b" font-family="monospace">快拆桿 CLOSE 鎖緊死點</text>
+
+              <!-- 3. C夾煞車皮安全間隙 -->
+              <line x1="440" y1="100" x2="380" y2="100" stroke="#10b981" stroke-width="1"/>
+              <circle cx="440" cy="100" r="3" fill="#10b981"/>
+              <text x="320" y="97" font-size="9" fill="#10b981" font-family="monospace">煞車皮對準輪框 (勿磨胎壁)</text>
+
+              <!-- 4. 防蛇咬高壓氣室 -->
+              <line x1="120" y1="90" x2="80" y2="70" stroke="#ec4899" stroke-width="1"/>
+              <circle cx="120" cy="90" r="3" fill="#ec4899"/>
+              <text x="10" y="68" font-size="9" fill="#ec4899" font-family="monospace">高壓防蛇咬爆胎 (Pinch Flat)</text>
+            </svg>
+          </div>
+        </div>
+
+        <!-- 區塊 3：5 大輪胎科學與保養錦囊清單 -->
+        <div class="space-y-3">
+          <span class="font-bold text-white text-sm flex items-center gap-1.5">
+            <i data-lucide="book-open" class="w-4 h-4 text-amber-400"></i>
+            小學生必讀・公路車 5 大輪胎科學與防摔秘笈
+          </span>
+
+          <div id="tire-lessons-container" class="space-y-3">
+            <!-- JS 動態生成 5 大核心觀念卡片 -->
+          </div>
+        </div>
+
+        <!-- 區塊 4：隨車緊急工具 5 寶清單 -->
+        <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-4 flex flex-col gap-2.5">
+          <span class="font-bold text-emerald-300 text-sm flex items-center gap-1.5">
+            <i data-lucide="wrench" class="w-4 h-4 text-emerald-400"></i>
+            公路車騎士隨身應急 5 寶
+          </span>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]" id="tire-emergency-kit-container">
+            <!-- JS 動態生成 -->
+          </div>
+        </div>
+
+        <!-- 區塊 5：河濱官方租借站立式打氣筒支援點 -->
+        <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-4 flex flex-col gap-2.5">
+          <span class="font-bold text-sky-300 text-sm flex items-center gap-1.5">
+            <i data-lucide="map-pin" class="w-4 h-4 text-sky-400"></i>
+            河濱 6 大官方免費高壓打氣筒位置 (出門在外隨時能補氣)
+          </span>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]" id="tire-service-pumps-container">
+            <!-- JS 動態生成 -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 底端動作 -->
+      <div class="p-4 border-t border-slate-800 bg-slate-950 flex items-center justify-between">
+        <span class="text-[11px] text-amber-300/80">
+          🚲 輪胎顧得好，騎行沒煩惱！每次出門前捏一捏輪胎再上路。
+        </span>
+        <button class="btn-close-modal px-4 py-1.5 rounded-lg text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 transition">
+          我知道了！
+        </button>
       </div>
     </div>
   </div>

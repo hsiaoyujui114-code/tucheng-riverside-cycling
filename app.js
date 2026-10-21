@@ -1212,25 +1212,380 @@ ${trackPoints}
   });
 
   // 綁定各按鈕彈窗事件
-  document.getElementById('btn-open-checklist').addEventListener('click', () => {
+  document.getElementById('btn-open-offline-modal')?.addEventListener('click', () => {
+    openModal('modal-offline-guide');
+  });
+
+  document.getElementById('btn-open-tire-modal')?.addEventListener('click', () => {
+    openModal('modal-tire-guide');
+  });
+
+  document.getElementById('btn-open-checklist')?.addEventListener('click', () => {
     openModal('modal-checklist');
   });
 
-  document.getElementById('btn-open-departure-guide').addEventListener('click', () => {
+  document.getElementById('btn-open-departure-guide')?.addEventListener('click', () => {
     openModal('modal-departure-guide');
   });
 
-  document.getElementById('btn-read-safety-guide').addEventListener('click', () => {
+  document.getElementById('btn-read-safety-guide')?.addEventListener('click', () => {
     openModal('modal-departure-guide');
   });
 
-  document.getElementById('btn-open-plan-modal').addEventListener('click', () => {
+  document.getElementById('btn-open-plan-modal')?.addEventListener('click', () => {
     openPlanModal();
   });
 
-  document.getElementById('btn-open-github-modal').addEventListener('click', () => {
+  document.getElementById('btn-open-github-modal')?.addEventListener('click', () => {
     openModal('modal-github');
   });
+
+  // ==========================================
+  // 14. 離線 PWA 與 Service Worker 核心管理
+  // ==========================================
+  function initServiceWorker() {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => {
+          console.log('[PWA] Service Worker 註冊成功，範圍：', reg.scope);
+          checkCacheStorageStatus();
+        })
+        .catch(err => {
+          console.warn('[PWA] Service Worker 註冊警告：', err);
+        });
+    }
+
+    // 監聽連線狀態
+    function updateNetworkStatus() {
+      const isOnline = navigator.onLine;
+      const dot = document.getElementById('net-status-dot');
+      const text = document.getElementById('net-status-text');
+      const headerBadge = document.getElementById('header-offline-badge');
+
+      if (isOnline) {
+        if (dot) {
+          dot.className = 'net-status-dot net-status-online';
+        }
+        if (text) {
+          text.className = 'text-emerald-400 font-semibold';
+          text.textContent = '網路連線正常・離線已快取';
+        }
+        if (headerBadge) {
+          headerBadge.className = 'px-1.5 py-0.2 rounded-full text-[9px] bg-cyan-300 text-slate-900 font-bold';
+          headerBadge.textContent = '離線可用';
+        }
+      } else {
+        if (dot) {
+          dot.className = 'net-status-dot net-status-offline';
+        }
+        if (text) {
+          text.className = 'text-amber-400 font-semibold';
+          text.textContent = '⚡ 離線模式 (無網路)・全功能運作中';
+        }
+        if (headerBadge) {
+          headerBadge.className = 'px-1.5 py-0.2 rounded-full text-[9px] bg-amber-400 text-slate-950 font-bold animate-pulse';
+          headerBadge.textContent = '⚡ 離線運作';
+        }
+      }
+    }
+
+    window.addEventListener('online', updateNetworkStatus);
+    window.addEventListener('offline', updateNetworkStatus);
+    updateNetworkStatus();
+  }
+
+  function checkCacheStorageStatus() {
+    if ('caches' in window) {
+      caches.has('tucheng-cycling-pwa-v2').then(hasCache => {
+        const badge = document.getElementById('cache-status-badge');
+        const msg = document.getElementById('cache-status-msg');
+        if (hasCache) {
+          if (badge) {
+            badge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-600/50';
+            badge.textContent = '🟢 離線包已快取 (100% 離線可用)';
+          }
+          if (msg) {
+            msg.textContent = '✅ 本機已具備完整離線包！出門即使手機沒網路、開飛航模式也能順暢看地圖與分岔路。';
+          }
+        } else {
+          if (badge) {
+            badge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-950 text-amber-300 border border-amber-600/50';
+            badge.textContent = '🟡 建議預先載入離線包';
+          }
+        }
+      });
+    }
+  }
+
+  function initOfflineCacheManager() {
+    const btnCache = document.getElementById('btn-cache-offline-now');
+    const progressContainer = document.getElementById('cache-progress-container');
+    const progressBar = document.getElementById('cache-progress-bar');
+    const progressText = document.getElementById('cache-progress-text');
+    const statusMsg = document.getElementById('cache-status-msg');
+    const badge = document.getElementById('cache-status-badge');
+
+    if (btnCache) {
+      btnCache.addEventListener('click', async () => {
+        if (!('caches' in window)) {
+          alert('您的瀏覽器不支援 Cache 儲存，但仍可直接使用網頁功能！');
+          return;
+        }
+
+        btnCache.disabled = true;
+        btnCache.classList.add('opacity-60');
+        if (progressContainer) progressContainer.classList.remove('hidden');
+
+        const assetsToCache = [
+          './',
+          './index.html',
+          './style.css',
+          './app.js',
+          './routes-data.js',
+          './game.js',
+          './manifest.json',
+          'https://cdn.tailwindcss.com',
+          'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
+          'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
+          'https://unpkg.com/lucide@latest',
+          'https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js'
+        ];
+
+        try {
+          const cache = await caches.open('tucheng-cycling-pwa-v2');
+          let completed = 0;
+
+          for (let i = 0; i < assetsToCache.length; i++) {
+            const url = assetsToCache[i];
+            try {
+              await cache.add(url);
+            } catch (e) {
+              console.warn('快取單項略過:', url, e);
+            }
+            completed++;
+            const percent = Math.round((completed / assetsToCache.length) * 100);
+            if (progressBar) progressBar.style.width = percent + '%';
+            if (progressText) progressText.textContent = `${percent}% (${completed}/${assetsToCache.length})`;
+          }
+
+          if (badge) {
+            badge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-600/50';
+            badge.textContent = '🟢 離線包已快取 (100% 離線可用)';
+          }
+          if (statusMsg) {
+            statusMsg.innerHTML = '🎉 <strong>下載完成！</strong> 雙北河濱全地圖資料與路口手冊已成功封存至手機中，無網路隨開隨看！';
+          }
+
+          if (typeof confetti === 'function') {
+            confetti({
+              particleCount: 80,
+              spread: 60,
+              origin: { y: 0.6 }
+            });
+          }
+        } catch (err) {
+          console.error('快取程序失敗:', err);
+          if (statusMsg) {
+            statusMsg.textContent = '快取過程中部分非關鍵資產無法存取，但核心資料仍可用！';
+          }
+        } finally {
+          btnCache.disabled = false;
+          btnCache.classList.remove('opacity-60');
+        }
+      });
+    }
+
+    // 離線分岔路口篩選器
+    const junctionFilter = document.getElementById('offline-junction-filter');
+    if (junctionFilter) {
+      junctionFilter.addEventListener('change', (e) => {
+        renderOfflinePocketJunctions(e.target.value);
+      });
+    }
+
+    // 列印口袋卡片
+    const btnPrintPocket = document.getElementById('btn-print-offline-pocket');
+    if (btnPrintPocket) {
+      btnPrintPocket.addEventListener('click', () => {
+        window.print();
+      });
+    }
+  }
+
+  function renderOfflinePocketJunctions(filterRouteId = 'all') {
+    const container = document.getElementById('offline-pocket-print-area');
+    if (!container) return;
+
+    const { criticalJunctions } = window.RIVERSIDE_DATA;
+    if (!criticalJunctions || !criticalJunctions.length) return;
+
+    let displayJunctions = criticalJunctions;
+    if (filterRouteId !== 'all') {
+      displayJunctions = criticalJunctions.filter(j => {
+        return j.decisions.some(d => d.suitableRoutes && d.suitableRoutes.includes(filterRouteId));
+      });
+    }
+
+    if (displayJunctions.length === 0) {
+      container.innerHTML = `
+        <div class="col-span-2 text-center py-6 text-slate-400">
+          <p>此路線行經主要路段直行，無複雜跨河分岔，沿專用道筆直騎行即可！</p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = displayJunctions.map((j, idx) => {
+      let highlightDecision = null;
+      if (filterRouteId !== 'all') {
+        highlightDecision = j.decisions.find(d => d.suitableRoutes && d.suitableRoutes.includes(filterRouteId));
+      }
+
+      return `
+        <div class="offline-fork-card bg-slate-900 border border-slate-800 rounded-xl p-3.5 flex flex-col justify-between gap-2.5">
+          <div>
+            <div class="flex items-center justify-between gap-1.5 mb-1.5">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono">
+                路口 ${idx + 1}
+              </span>
+              <span class="text-[10px] text-slate-400 font-mono">${j.badge || '關鍵決策點'}</span>
+            </div>
+            <h4 class="font-bold text-white text-xs mb-1">${j.name}</h4>
+            <p class="text-slate-400 text-[11px] mb-2 leading-relaxed">${j.summary}</p>
+
+            <!-- 轉向決策條 -->
+            <div class="space-y-1.5">
+              ${j.decisions.map(d => {
+                const isSelected = highlightDecision && (d.direction === highlightDecision.direction);
+                return `
+                  <div class="p-2 rounded-lg border text-[11px] ${
+                    isSelected
+                      ? 'bg-cyan-950/80 border-cyan-500 text-cyan-200 ring-1 ring-cyan-400/40 font-bold'
+                      : 'bg-slate-950/60 border-slate-800 text-slate-300'
+                  }">
+                    <div class="flex items-center justify-between gap-1">
+                      <span class="${isSelected ? 'text-cyan-300' : 'text-amber-300'} font-bold">${d.direction}</span>
+                      ${isSelected ? '<span class="text-[9px] px-1.5 py-0.2 rounded bg-cyan-600 text-slate-950 font-black">本次推薦</span>' : ''}
+                    </div>
+                    <p class="text-[10px] mt-0.5 ${isSelected ? 'text-cyan-100' : 'text-slate-400'}">${d.destination} ➔ ${d.action}</p>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+
+          <!-- 安全警示 -->
+          <div class="pt-2 border-t border-slate-800/80 text-[10px] text-amber-300/90 flex items-start gap-1">
+            <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5"></i>
+            <span>${j.safetyTip}</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    lucide.createIcons();
+  }
+
+  // ==========================================
+  // 15. 公路車輪胎科技與胎壓即時試算儀
+  // ==========================================
+  function initTireTechGuide() {
+    const { roadBikeTireGuide } = window.RIVERSIDE_DATA;
+    if (!roadBikeTireGuide) return;
+
+    // 1. 初始化胎壓滑桿與計算器
+    const slider = document.getElementById('tire-weight-slider');
+    const weightDisplay = document.getElementById('tire-weight-display');
+    const psiDisplay = document.getElementById('calculated-psi-display');
+    const thumbFeelDesc = document.getElementById('psi-thumb-feel-desc');
+
+    function updateCalculatedPsi(weight) {
+      if (weightDisplay) weightDisplay.textContent = `${weight} kg`;
+      
+      const calculatedPsi = Math.round(75 + (weight - 35) * 0.5);
+      if (psiDisplay) psiDisplay.textContent = `${calculatedPsi} PSI`;
+
+      if (thumbFeelDesc) {
+        if (weight <= 42) {
+          thumbFeelDesc.innerHTML = `👉 <strong>手感檢驗法 (35-42kg)：</strong> 雙拇指用力按壓外胎側邊，手感像「緊實的硬橡皮筋」，按壓下陷不超過 1mm，能有效吸震防彈跳！`;
+        } else if (weight <= 50) {
+          thumbFeelDesc.innerHTML = `👉 <strong>手感檢驗法 (43-50kg 推薦甜蜜點)：</strong> 雙拇指使勁全力掐壓輪胎側面，手感必須像「硬磚塊」掐捏不動，防蛇咬且滾動阻力超低！`;
+        } else {
+          thumbFeelDesc.innerHTML = `👉 <strong>手感檢驗法 (51-65kg)：</strong> 輪胎必須「硬如敲擊石頭」，過水門減速駁坎時屁股微抬，保護輪框並避免內胎被夾破！`;
+        }
+      }
+    }
+
+    if (slider) {
+      slider.addEventListener('input', (e) => {
+        updateCalculatedPsi(Number(e.target.value));
+      });
+      updateCalculatedPsi(45);
+    }
+
+    // 2. 渲染 5 大輪胎科學觀念卡片
+    const lessonsContainer = document.getElementById('tire-lessons-container');
+    if (lessonsContainer && roadBikeTireGuide.coreLessons) {
+      lessonsContainer.innerHTML = roadBikeTireGuide.coreLessons.map(lesson => {
+        return `
+          <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 flex flex-col gap-2">
+            <div class="flex items-center justify-between gap-2 border-b border-slate-800/80 pb-1.5">
+              <span class="font-bold text-white text-xs flex items-center gap-1.5">
+                <i data-lucide="${lesson.icon || 'shield-alert'}" class="w-4 h-4 text-amber-400"></i>
+                ${lesson.title}
+              </span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950 text-amber-300 border border-amber-600/40">
+                ${lesson.badge}
+              </span>
+            </div>
+            <p class="text-slate-300 text-[11px] leading-relaxed">
+              <strong class="text-slate-200">🔬 原理剖析：</strong>${lesson.principle}
+            </p>
+            <div class="p-2 rounded-lg bg-slate-900 border border-cyan-900/40 text-[11px] text-cyan-200 flex items-start gap-1.5">
+              <i data-lucide="check-circle" class="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5"></i>
+              <span><strong>實戰解方：</strong>${lesson.prevention}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 3. 渲染隨車 5 寶清單
+    const emergencyContainer = document.getElementById('tire-emergency-kit-container');
+    if (emergencyContainer && roadBikeTireGuide.emergencyRepairKit) {
+      emergencyContainer.innerHTML = roadBikeTireGuide.emergencyRepairKit.map((item, idx) => {
+        return `
+          <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex flex-col gap-0.5">
+            <span class="font-bold text-emerald-300 flex items-center gap-1">
+              <span class="w-4 h-4 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-600 flex items-center justify-center text-[9px] font-mono">${idx + 1}</span>
+              ${item.item}
+            </span>
+            <span class="text-slate-400 text-[10px] pl-5">${item.purpose}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 4. 渲染河濱 6 大官方租借站立式打氣筒支援點
+    const pumpsContainer = document.getElementById('tire-service-pumps-container');
+    if (pumpsContainer && roadBikeTireGuide.serviceStationPumps) {
+      pumpsContainer.innerHTML = roadBikeTireGuide.serviceStationPumps.map(pump => {
+        return `
+          <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex items-start justify-between gap-2">
+            <div>
+              <span class="font-bold text-sky-300 block">${pump.name}</span>
+              <span class="text-slate-400 text-[10px]">${pump.desc}</span>
+            </div>
+            <span class="text-[10px] font-mono text-cyan-400 shrink-0 bg-slate-950 px-1.5 py-0.5 rounded border border-cyan-900/50">
+              ${pump.dist}
+            </span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    lucide.createIcons();
+  }
 
   // ==========================================
   // 13. 系統初次啟動執行
@@ -1239,5 +1594,9 @@ ${trackPoints}
   renderRouteCards();
   renderChecklist();
   selectRoute(selectedRouteId);
+  initServiceWorker();
+  initOfflineCacheManager();
+  initTireTechGuide();
+  renderOfflinePocketJunctions('all');
   lucide.createIcons();
 });
