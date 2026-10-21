@@ -77,6 +77,12 @@
       <!-- 右側動作按鈕組 -->
       <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
         
+        <!-- 交通接駁指南 按鈕 -->
+        <button id="btn-open-shuttle-modal" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-500 hover:to-indigo-500 transition shadow-sm shadow-purple-500/25 ring-1 ring-purple-400/40">
+          <i data-lucide="train" class="w-4 h-4"></i>
+          <span>交通接駁</span>
+        </button>
+
         <!-- 離線設定與無網路速查手冊 按鈕 -->
         <button id="btn-open-offline-modal" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-sky-600 to-cyan-600 text-white hover:from-sky-500 hover:to-cyan-500 transition shadow-sm shadow-cyan-500/25 ring-1 ring-cyan-400/50">
           <i data-lucide="download-cloud" class="w-4 h-4"></i>
@@ -284,6 +290,14 @@
             </div>
 
             <div class="flex items-center gap-2 flex-wrap">
+              <label class="flex items-center gap-1.5 cursor-pointer select-none bg-purple-950/80 px-2.5 py-1 rounded-lg border border-purple-600/80 hover:bg-purple-900 text-[11px] text-purple-300">
+                <input type="checkbox" id="toggle-transit-layer" checked class="rounded text-purple-500 focus:ring-0">
+                <span class="font-bold flex items-center gap-1">
+                  <i data-lucide="train" class="w-3.5 h-3.5 text-purple-400"></i>
+                  交通接駁站 (捷運/火車/渡輪)
+                </span>
+              </label>
+
               <label class="flex items-center gap-1.5 cursor-pointer select-none bg-sky-950/80 px-2.5 py-1 rounded-lg border border-sky-600/80 hover:bg-sky-900 text-[11px] text-sky-300">
                 <input type="checkbox" id="toggle-junction-layer" checked class="rounded text-sky-500 focus:ring-0">
                 <span class="font-bold flex items-center gap-1">
@@ -330,6 +344,9 @@
           <div class="absolute bottom-3 left-3 z-[1000] bg-white/95 backdrop-blur-xs px-3 py-2 rounded-xl shadow-md border border-slate-200 text-[11px] text-slate-700 flex flex-wrap items-center gap-2.5 max-w-[85%]">
             <span class="flex items-center gap-1 font-semibold text-slate-900">
               <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span> 起點(學府公園)
+            </span>
+            <span class="flex items-center gap-1 font-semibold text-purple-700">
+              <span class="w-2.5 h-2.5 rounded-full bg-purple-600 inline-block"></span> 🚇 交通接駁站(捷運/火車/渡輪)
             </span>
             <span class="flex items-center gap-1 font-semibold text-emerald-700">
               <span class="w-3 h-1.5 bg-emerald-500 rounded-sm inline-block"></span> 河濱專用道(96%無車)
@@ -1291,6 +1308,166 @@ git push -u origin main</pre>
         </span>
         <button class="btn-close-modal px-4 py-1.5 rounded-lg text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 transition">
           我知道了！
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 彈窗 8：🚇 小騎士交通接駁與緊急撤退指南 ==================== -->
+  <div id="modal-shuttle-guide" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 hidden">
+    <div class="bg-slate-900 text-white rounded-2xl max-w-3xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-purple-600/50 overflow-hidden">
+      <!-- 標題欄 -->
+      <div class="px-5 py-4 border-b border-purple-900/50 flex items-center justify-between bg-gradient-to-r from-slate-950 via-slate-900 to-purple-950">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center shadow-md shadow-purple-500/30">
+            <i data-lucide="train" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-white text-base flex items-center gap-2">
+              <span>小騎士自行車交通接駁與緊急撤退指南</span>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-700 font-mono">TRANSIT HUB</span>
+            </h3>
+            <p class="text-xs text-purple-200/70">騎累了？天黑逆風？善用捷運、火車與水上渡輪，隨時安全開心回家！</p>
+          </div>
+        </div>
+        <button class="btn-close-modal text-slate-400 hover:text-white p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- 內容滾動區 -->
+      <div class="p-4 sm:p-6 overflow-y-auto flex-1 space-y-6 text-xs text-slate-300">
+        
+        <!-- 區塊 1：各路線「騎累了/天黑了」即時撤退快查表 -->
+        <div class="bg-slate-950/90 border border-purple-500/30 rounded-xl p-4 flex flex-col gap-3 shadow-inner">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
+            <div>
+              <span class="font-bold text-purple-300 text-sm flex items-center gap-1.5">
+                <i data-lucide="compass" class="w-4 h-4 text-purple-400"></i>
+                選擇你的路線 ➔ 查詢最近的捷運/火車/渡輪撤退點
+              </span>
+              <p class="text-[11px] text-slate-400 mt-0.5">出門不用硬撐！只要騎到鄰近水門，隨時可以搭大眾運輸連人帶車回土城</p>
+            </div>
+
+            <!-- 下拉選單 -->
+            <select id="shuttle-route-filter" class="bg-slate-800 text-white rounded-lg px-2.5 py-1 text-xs border border-purple-700/60 font-medium">
+              <option value="route-tamsui">淡水金色水岸老街線 (73km)</option>
+              <option value="route-bitan">新店碧潭風景區線 (42km)</option>
+              <option value="route-yingge">鶯歌陶瓷老街線 (27km)</option>
+              <option value="route-sanxia">三峽祖師廟老街線 (32km)</option>
+              <option value="route-xiong-hou-sen">熊猴森樂園＆都會公園 (22km)</option>
+              <option value="route-dadaocheng">大稻埕碼頭貨櫃市集 (37km)</option>
+              <option value="route-sunshine-park">新店陽光運動公園 (34km)</option>
+              <option value="route-guting-water">台北古亭花海自來水園區 (29km)</option>
+              <option value="route-metropark">新北大都會公園八里線 (54km)</option>
+            </select>
+          </div>
+
+          <!-- 動態撤退卡片容器 -->
+          <div id="shuttle-route-result-container" class="space-y-2.5">
+            <!-- JS 動態生成 -->
+          </div>
+        </div>
+
+        <!-- 區塊 2：台北捷運攜帶自行車規則 (小學生必看) -->
+        <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-4 flex flex-col gap-3">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <span class="font-bold text-sky-300 text-sm flex items-center gap-1.5">
+              <i data-lucide="subway" class="w-4 h-4 text-sky-400"></i>
+              台北捷運・攜帶公路車搭乘 4 大金律
+            </span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-950 text-sky-300 border border-sky-600/40">
+              票價 80 元
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
+            <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex flex-col gap-1">
+              <span class="font-bold text-white flex items-center gap-1">
+                <i data-lucide="clock" class="w-3.5 h-3.5 text-sky-400"></i> 開放進出時段
+              </span>
+              <p class="text-slate-300">
+                <strong>【假日】</strong>全天營運時段皆可攜車！<br>
+                <strong>【平日】</strong>10:00 ~ 16:00 及 22:00 ~ 營運結束（避開上班尖峰）。
+              </p>
+            </div>
+
+            <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex flex-col gap-1">
+              <span class="font-bold text-white flex items-center gap-1">
+                <i data-lucide="ticket" class="w-3.5 h-3.5 text-amber-400"></i> 票價與購票方式
+              </span>
+              <p class="text-slate-300">
+                單人單車合併票「<strong>單程 80 元</strong>」（不限搭乘站數！）。至詢問處跟站務員買「攜帶自行車單程票」走寬閘門。
+              </p>
+            </div>
+
+            <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex flex-col gap-1">
+              <span class="font-bold text-white flex items-center gap-1">
+                <i data-lucide="users" class="w-3.5 h-3.5 text-emerald-400"></i> 車廂指定位置
+              </span>
+              <p class="text-slate-300">
+                僅限停在列車<strong>【第一節車廂】</strong>與<strong>【最後一節車廂】</strong>，每扇車門限停 2 輛，同學需全程扶著車身！
+              </p>
+            </div>
+
+            <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex flex-col gap-1">
+              <span class="font-bold text-white flex items-center gap-1">
+                <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-red-400"></i> 站內一律牽行
+              </span>
+              <p class="text-slate-300">
+                站內與月台絕對<strong>不可滑行或騎乘</strong>！必須搭乘<strong>無障礙電梯</strong>，嚴禁推車上手扶梯或走樓梯。
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 區塊 3：台鐵兩鐵區間車＆八里渡船頭 -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          <!-- 台鐵兩鐵區間車 -->
+          <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 flex flex-col gap-2">
+            <span class="font-bold text-amber-300 text-sm flex items-center gap-1.5">
+              <i data-lucide="train" class="w-4 h-4 text-amber-400"></i>
+              台鐵兩鐵區間車 (鶯歌/浮洲 ➔ 板橋)
+            </span>
+            <p class="text-slate-300 text-[11px] leading-relaxed">
+              台鐵區間車多數班次支援「免拆車整車上車」！<br>
+              <strong>票價：</strong>同學全票 + 自行車半票（鶯歌搭到浮洲單車只要 <strong>15 元</strong>！）。<br>
+              <strong>時間：</strong>鶯歌到浮洲只要 12 分鐘，出站牽車 10 分鐘回到學府公園！
+            </p>
+          </div>
+
+          <!-- 八里淡水渡船 -->
+          <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 flex flex-col gap-2">
+            <span class="font-bold text-cyan-300 text-sm flex items-center gap-1.5">
+              <i data-lucide="anchor" class="w-4 h-4 text-cyan-400"></i>
+              八里 ⇄ 淡水單車渡輪 (藍色公路)
+            </span>
+            <p class="text-slate-300 text-[11px] leading-relaxed">
+              <strong>航程：</strong>6~8 分鐘直接橫跨淡水河，不用繞關渡大橋！<br>
+              <strong>票價：</strong>刷悠遊卡 全票 34 元 + 單車 25 元 = <strong>59 元</strong>。<br>
+              <strong>班次：</strong>平日 10-15 分鐘一班，假日隨到隨開，單車直接牽上甲板！
+            </p>
+          </div>
+        </div>
+
+        <!-- 區塊 4：河濱官方緊急救援專線 -->
+        <div class="p-3 bg-red-950/40 border border-red-800/50 rounded-xl text-[11px] text-red-200 flex items-start gap-2">
+          <i data-lucide="phone-call" class="w-4 h-4 text-red-400 shrink-0 mt-0.5"></i>
+          <div>
+            <span class="font-bold text-white text-xs block mb-0.5">新北市高灘地河濱道路救援與租借站專線：</span>
+            <p>若遇到大爆胎且隨身工具無法排除，可至鄰近 7 大官方租借站（浮洲、新月、江子翠、鶯歌、碧潭、大稻埕、八里）由專職人員協助，或撥打新北高灘處專線：<strong>(02) 8969-9596</strong>。</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 底端動作 -->
+      <div class="p-4 border-t border-slate-800 bg-slate-950 flex items-center justify-between">
+        <span class="text-[11px] text-purple-300/80">
+          🚇 知道怎麼搭車回家，騎公路車探索就完全沒有後顧之憂！
+        </span>
+        <button class="btn-close-modal px-4 py-1.5 rounded-lg text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white transition">
+          我記住了！
         </button>
       </div>
     </div>

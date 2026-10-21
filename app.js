@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let map;
   let startMarker;
   const polylineLayers = {};
+  let activeCasingPolyline = null;
   let currentPoiMarkers = [];
 
   // ==========================================
@@ -129,6 +130,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 3.6 繪製「分岔路口路牌指引」圖層（指引路牌與轉向決策）
     initJunctionLayer();
+
+    // 3.7 繪製「交通接駁樞紐」圖層（捷運、火車、水上渡輪）
+    initTransitLayer();
+
+    // 3.8 繪製「關鍵地標與水門起迄看板」圖層
+    initMilestoneMarkers();
 
     // 4. 繪製所有雙北河濱自行車路線折線 (Polylines)
     routes.forEach(route => {
@@ -443,6 +450,128 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // ==========================================
+  // 交通接駁樞紐圖層 (捷運、火車、水上渡輪)
+  // ==========================================
+  let transitLayerGroup = null;
+
+  function initTransitLayer() {
+    transitLayerGroup = L.featureGroup().addTo(map);
+
+    const { transitHubs } = window.RIVERSIDE_DATA;
+    if (!transitHubs) return;
+
+    transitHubs.forEach(hub => {
+      let iconEmoji = '🚇';
+      let markerClass = 'transit-hub-marker';
+      if (hub.type === 'train') {
+        iconEmoji = '🚂';
+      } else if (hub.type === 'ferry') {
+        iconEmoji = '⛴️';
+        markerClass = 'transit-hub-marker transit-ferry-marker';
+      }
+
+      const icon = L.divIcon({
+        className: markerClass,
+        html: `<div style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px;">${iconEmoji}</div>`,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+      });
+
+      const marker = L.marker(hub.coords, { icon: icon }).addTo(transitLayerGroup);
+      marker.bindPopup(`
+        <div class="text-xs max-w-[270px]">
+          <div class="flex items-center gap-1.5 mb-1.5">
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold text-white bg-purple-700">${hub.system}</span>
+            <span class="text-[10px] text-purple-700 font-bold bg-purple-100 px-1.5 py-0.2 rounded">${hub.badge}</span>
+          </div>
+          <h4 class="font-bold text-slate-900 text-sm mb-1">${hub.name}</h4>
+          <p class="text-slate-700 text-[11px] mb-1.5 leading-relaxed"><strong>🚪 最近河濱水門：</strong>${hub.nearestWaterGate}</p>
+          <div class="p-2 bg-purple-50 rounded-lg border border-purple-200 text-purple-950 text-[11px] mb-1.5 leading-relaxed">
+            <p class="font-bold mb-0.5">🎫 攜車進站規定：</p>
+            <p>${hub.rules}</p>
+          </div>
+          <div class="p-2 bg-amber-50 rounded-lg border border-amber-200 text-amber-900 text-[11px] leading-relaxed">
+            <p class="font-bold mb-0.5">💡 騎累了撤退回程指南：</p>
+            <p>${hub.rescueTip}</p>
+          </div>
+        </div>
+      `);
+
+      marker.bindTooltip(`<strong>${hub.name}</strong><br><span style="color:#a855f7;">${hub.system} (攜車接駁)</span>`, {
+        direction: 'top',
+        offset: [0, -14]
+      });
+    });
+
+    const toggleTransit = document.getElementById('toggle-transit-layer');
+    if (toggleTransit) {
+      toggleTransit.addEventListener('change', (e) => {
+        if (e.target.checked) {
+          map.addLayer(transitLayerGroup);
+        } else {
+          map.removeLayer(transitLayerGroup);
+        }
+      });
+    }
+  }
+
+  // ==========================================
+  // 關鍵地標與水門起迄看板圖層 (加強地圖清晰度)
+  // ==========================================
+  let milestoneMarkerGroup = null;
+
+  function initMilestoneMarkers() {
+    milestoneMarkerGroup = L.featureGroup().addTo(map);
+
+    // 1. 土城起點大看板
+    const startBannerIcon = L.divIcon({
+      className: 'start-banner-marker',
+      html: `<span>🚩 土城起點：學府公園</span>`,
+      iconSize: [160, 26],
+      iconAnchor: [80, 13]
+    });
+    L.marker([24.9875, 121.4502], { icon: startBannerIcon, zIndexOffset: 2000 }).addTo(milestoneMarkerGroup)
+      .bindPopup(`
+        <div class="text-xs">
+          <h4 class="font-bold text-amber-700 text-sm mb-1">🚩 土城學府公園 (海山站3號出口)</h4>
+          <p class="text-slate-700">出發點設有大草坪與遮陽涼亭，由此沿裕民路前往浮洲橋或城林橋牽引道進入河濱！</p>
+        </div>
+      `);
+
+    // 2. 浮洲水門牽引道入口 (由此進入河濱專用道)
+    const fuzhouGateIcon = L.divIcon({
+      className: 'watergate-entrance-marker',
+      html: `<span>🚪 浮洲水門 (北上由此進河濱)</span>`,
+      iconSize: [180, 24],
+      iconAnchor: [90, 12]
+    });
+    L.marker([24.9968, 121.4395], { icon: fuzhouGateIcon, zIndexOffset: 1500 }).addTo(milestoneMarkerGroup)
+      .bindPopup(`
+        <div class="text-xs">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold text-white bg-emerald-600 mb-1 inline-block">進入堤外河濱專用道</span>
+          <h4 class="font-bold text-slate-900 text-sm mb-1">🚪 浮洲橋自行車牽引道</h4>
+          <p class="text-slate-700">一過牽引道下至堤外，即是 100% 封閉的大漢溪右岸自行車專用道！往北直奔新月橋、熊猴森、大稻埕、淡水、八里，全程零紅綠燈！</p>
+        </div>
+      `);
+
+    // 3. 城林水門牽引道入口 (由此進入河濱專用道)
+    const chenglinGateIcon = L.divIcon({
+      className: 'watergate-entrance-marker',
+      html: `<span>🚪 城林水門 (南下由此進河濱)</span>`,
+      iconSize: [180, 24],
+      iconAnchor: [90, 12]
+    });
+    L.marker([24.9812, 121.4330], { icon: chenglinGateIcon, zIndexOffset: 1500 }).addTo(milestoneMarkerGroup)
+      .bindPopup(`
+        <div class="text-xs">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold text-white bg-emerald-600 mb-1 inline-block">進入堤外河濱專用道</span>
+          <h4 class="font-bold text-slate-900 text-sm mb-1">🚪 城林大橋自行車牽引道</h4>
+          <p class="text-slate-700">推車跨越堤防後，直接進入大漢溪右岸水岸專用道！往南直達三鶯之心、鶯歌老街與三峽清水祖師廟！</p>
+        </div>
+      `);
+  }
+
   // 繪製沿線前進方向箭頭 (讓小騎士清楚知道往哪邊前進)
   function updateDirectionArrows(route) {
     if (!directionArrowGroup) return;
@@ -641,7 +770,20 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    // 2. 更新地圖上的折線樣式
+    // 2. 更新地圖上的折線樣式 (加粗黑框描邊，讓河濱路線極致清晰)
+    if (activeCasingPolyline) {
+      map.removeLayer(activeCasingPolyline);
+      activeCasingPolyline = null;
+    }
+    activeCasingPolyline = L.polyline(route.pathPoints, {
+      color: '#020617',
+      weight: 12,
+      opacity: 0.85,
+      lineCap: 'round',
+      lineJoin: 'round'
+    }).addTo(map);
+    activeCasingPolyline.bringToBack();
+
     Object.keys(polylineLayers).forEach(id => {
       const polyline = polylineLayers[id];
       if (id === routeId) {
@@ -676,6 +818,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // 4.6 高亮本路線經過的分岔路口標記
     updateActiveJunctionMarkers(routeId);
 
+    // 4.7 同步接駁指南彈窗的路線下拉選單
+    const shuttleRouteSelect = document.getElementById('shuttle-route-filter');
+    if (shuttleRouteSelect && shuttleRouteSelect.value !== routeId) {
+      shuttleRouteSelect.value = routeId;
+      shuttleRouteSelect.dispatchEvent(new Event('change'));
+    }
+
     // 5. 更新頂部快速看板與下方詳細面板
     updateQuickStats(route);
     renderDetailPanel(route);
@@ -709,6 +858,16 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
     `);
     currentPoiMarkers.push(destMarker);
+
+    // 目的地清晰折返大標籤
+    const destBannerIcon = L.divIcon({
+      className: 'dest-banner-marker',
+      html: `<span>🏁 折返點：${route.name.split('＆')[0]}</span>`,
+      iconSize: [160, 26],
+      iconAnchor: [80, -18]
+    });
+    const bannerMarker = L.marker(lastPoint, { icon: destBannerIcon, zIndexOffset: 2000 }).addTo(map);
+    currentPoiMarkers.push(bannerMarker);
 
     // 繪製沿途重要風景與美食點 (POIs)
     route.pois.forEach(poi => {
@@ -1212,6 +1371,10 @@ ${trackPoints}
   });
 
   // 綁定各按鈕彈窗事件
+  document.getElementById('btn-open-shuttle-modal')?.addEventListener('click', () => {
+    openModal('modal-shuttle-guide');
+  });
+
   document.getElementById('btn-open-offline-modal')?.addEventListener('click', () => {
     openModal('modal-offline-guide');
   });
@@ -1588,6 +1751,64 @@ ${trackPoints}
   }
 
   // ==========================================
+  // 16. 小騎士交通接駁與緊急撤退指南
+  // ==========================================
+  function initShuttleGuide() {
+    const { transitHubs, shuttleGuide, routes } = window.RIVERSIDE_DATA;
+    if (!transitHubs || !shuttleGuide) return;
+
+    const routeSelector = document.getElementById('shuttle-route-filter');
+    const resultContainer = document.getElementById('shuttle-route-result-container');
+
+    function renderShuttleForRoute(routeId) {
+      if (!resultContainer) return;
+      const currentRoute = routes.find(r => r.id === routeId);
+
+      // 篩選與本路線最相關的接駁站
+      const matchedHubs = transitHubs.filter(h => {
+        return h.suitableRoutes.includes('all') || h.suitableRoutes.includes(routeId);
+      });
+
+      resultContainer.innerHTML = `
+        <div class="p-3 bg-purple-950/60 border border-purple-800/60 rounded-xl mb-2 flex items-center justify-between">
+          <div>
+            <span class="text-[10px] text-purple-300">目前選取路線：</span>
+            <h4 class="font-bold text-white text-xs">${currentRoute ? currentRoute.name : '精選路線'}</h4>
+          </div>
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-600 text-white">找到 ${matchedHubs.length} 個接駁撤退點</span>
+        </div>
+        ${matchedHubs.map(hub => `
+          <div class="p-3.5 bg-slate-900 border border-slate-800 rounded-xl flex flex-col gap-2">
+            <div class="flex items-center justify-between gap-2 border-b border-slate-800 pb-1.5">
+              <span class="font-bold text-white text-xs flex items-center gap-1.5">
+                <span class="text-base">${hub.type === 'ferry' ? '⛴️' : (hub.type === 'train' ? '🚂' : '🚇')}</span>
+                ${hub.name}
+              </span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-950 text-purple-300 border border-purple-700/60">
+                ${hub.badge}
+              </span>
+            </div>
+            <div class="text-[11px] text-slate-300 space-y-1">
+              <p><strong class="text-sky-300">🚪 最近河濱水門：</strong>${hub.nearestWaterGate}</p>
+              <p><strong class="text-amber-300">🎫 攜車進站規定：</strong>${hub.rules}</p>
+              <p><strong class="text-emerald-300">💡 騎累了撤退回程：</strong>${hub.rescueTip}</p>
+            </div>
+          </div>
+        `).join('')}
+      `;
+
+      lucide.createIcons();
+    }
+
+    if (routeSelector) {
+      routeSelector.addEventListener('change', (e) => {
+        renderShuttleForRoute(e.target.value);
+      });
+      renderShuttleForRoute(routeSelector.value || 'route-tamsui');
+    }
+  }
+
+  // ==========================================
   // 13. 系統初次啟動執行
   // ==========================================
   initMap();
@@ -1597,6 +1818,7 @@ ${trackPoints}
   initServiceWorker();
   initOfflineCacheManager();
   initTireTechGuide();
+  initShuttleGuide();
   renderOfflinePocketJunctions('all');
   lucide.createIcons();
 });
